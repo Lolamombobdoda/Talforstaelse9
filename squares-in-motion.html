@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="zxx">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}.home{align-self:flex-start;margin-bottom:-24px;font:600 14px/1 var(--font);padding:9px 14px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);text-decoration:none;position:relative;transition:opacity 2s,border-color .3s}
+.home:hover{border-color:var(--mute)}
+.home:focus-visible{outline:3px solid var(--cB);outline-offset:2px}
+body.focusing .home{opacity:.4;transition-duration:.9s}
+</style>
+<title>Square Roots in Motion</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Azeret+Mono:ital,wght@0,400;0,600;0,800;1,600;1,800&display=swap">
+<style>
+/* Layout: one stage per idea. Expression on top, the working below it. Orange = a side (and the first number), blue = the second number, green = the action (the exponent 2, the root sign, the tens, the half), purple = an area, red = conditions such as x ≥ 0. */
+:root{
+  --bg:#EEF1F4; --panel:#FFFFFF; --ink:#172031; --mute:#7D879A; --rule:#D3D9E2; --dim:rgba(16,22,34,.16);
+  --cA:#DD5F0B; --cB:#2357D4; --cF:#0E8A5A; --cO:#7A3FD8; --cR:#D42A2A;
+  --area:color-mix(in srgb, var(--cO) 15%, var(--panel));
+  --font:'Azeret Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1015; --panel:#161A21; --ink:#E6E9EF; --mute:#77839A; --rule:#2B323E; --dim:rgba(0,0,0,.45);
+  --cA:#FF8A42; --cB:#6E97FF; --cF:#34C98A; --cO:#B08CFF; --cR:#FF6B6B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1015; --panel:#161A21; --ink:#E6E9EF; --mute:#77839A; --rule:#2B323E; --dim:rgba(0,0,0,.45);
+  --cA:#FF8A42; --cB:#6E97FF; --cF:#34C98A; --cO:#B08CFF; --cR:#FF6B6B; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--font)}
+.wrap{max-width:936px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:36px 72px;display:flex;flex-direction:column;gap:44px}
+.top{display:flex;flex-direction:column;align-items:center;gap:18px}
+.titles{text-align:center}
+.titles h1{font:800 clamp(28px,5.5vw,46px)/1.1 var(--font);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.titles .by{margin:8px 0 0;font-size:15px;color:var(--mute);letter-spacing:.02em}
+.dimmer{position:fixed;inset:0;background:var(--dim);opacity:0;pointer-events:none;transition:opacity 2s;z-index:1}
+body.focusing .dimmer{opacity:1}
+.top,.sec{position:relative;transition:opacity 2s}
+/* dimming comes in quickly, and lifts slowly a moment after the animation ends */
+body.focusing .dimmer,body.focusing .top,body.focusing .sec,body.focusing .note{transition-duration:.9s}
+body.focusing .top,body.focusing .sec:not(.active){opacity:.4}
+.sec.active{z-index:2}
+@media (prefers-reduced-motion: reduce){.dimmer,.top,.sec{transition:none}}
+.ops{display:flex;justify-content:center;max-width:100%}
+.ops svg{max-width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px 40px}
+.dmsw{display:inline-flex;gap:8px}
+.ask{display:inline-grid;grid-template-columns:auto auto;column-gap:8px;row-gap:5px;justify-items:center}
+.ask::before{content:'?';grid-column:1/-1;font:600 17px/1 var(--font);color:var(--ink)}
+.dmsw button{font:600 15px/1 var(--font);padding:6px 10px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center}
+.dmsw button:hover{border-color:var(--mute)}
+.dmsw button.on{border:2px solid var(--ink)}
+.sec{display:grid;grid-template-columns:152px minmax(0,1fr);gap:16px;align-items:start}
+.glyph{display:flex;justify-content:center;padding-top:14px}
+.glyph svg{height:auto}
+@media (max-width:640px){.sec{grid-template-columns:minmax(0,1fr)}.glyph{justify-content:flex-start;padding-top:0}}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:16px;overflow:hidden;min-width:0}
+svg.stage{display:block;width:100%;height:auto}
+.bar,.methods{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-top:1px solid var(--rule);align-items:center}
+.methods{justify-content:center;gap:14px;background:var(--bg)}
+.exs{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+.card button{font:600 15px/1 var(--font);padding:6px 10px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.card button:hover{border-color:var(--mute)}
+.card button.on{border:2px solid var(--ink)}
+.methods button{padding:8px 14px;border-radius:16px}
+/* the numbers 1 to 10 fit on one row */
+[data-sec=sq] .exs{gap:6px;flex-wrap:nowrap}
+[data-sec=sq] .exs button{padding:6px 6px;min-width:44px}
+.bar .replay{font-size:22px;padding:8px 14px;align-self:stretch;min-width:52px}
+.bar .pp{color:var(--ink)}
+.bar .pp[aria-pressed="true"]{border:2px solid var(--cF);color:var(--cF)}
+button:focus-visible{outline:3px solid var(--cB);outline-offset:2px}
+.rules{display:flex;flex-direction:column;gap:28px;padding:26px 18px}
+.rrow{display:flex;flex-wrap:wrap;justify-content:space-around;align-items:center;gap:22px 24px}
+.rpair{display:inline-flex;align-items:center;gap:14px}
+.rcol{display:inline-flex;flex-direction:column;align-items:center;gap:8px}
+.rules svg{max-width:100%;height:auto}
+
+svg text{font-family:var(--font);font-weight:600}
+.lf{fill:var(--ink);transition:fill .6s}
+.lf.it{font-style:italic}
+.lbar{stroke:var(--ink);stroke-linecap:round;transition:stroke .6s}
+.lpath{fill:none;stroke:var(--ink);stroke-linecap:round;stroke-linejoin:round;transition:stroke .6s}
+.lf.cA{fill:var(--cA)} .lf.cB{fill:var(--cB)} .lf.cF{fill:var(--cF)} .lf.cO{fill:var(--cO)} .lf.cR{fill:var(--cR)} .lf.mut{fill:var(--mute)}
+.lbar.cA,.lpath.cA{stroke:var(--cA)} .lbar.cB,.lpath.cB{stroke:var(--cB)} .lbar.cF,.lpath.cF{stroke:var(--cF)} .lbar.cO,.lpath.cO{stroke:var(--cO)}
+.lf.dim{fill:var(--rule)} .lbar.dim,.lpath.dim{stroke:var(--rule)}
+.cell{fill:var(--area);stroke:var(--cO);stroke-width:1.2}
+.area{fill:var(--area);stroke:var(--cO);stroke-width:2;transition:opacity .9s}
+.area.dim{opacity:.3}
+.grid{stroke:var(--cO);stroke-width:1.2}
+.nlax{stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.nltk{stroke:var(--ink);stroke-width:1.6;stroke-linecap:round}
+.band{fill:var(--cA);fill-opacity:.25;stroke:var(--cA);stroke-width:1.5}
+.tint{fill:var(--cA);fill-opacity:.38}
+.lf.halo{paint-order:stroke;stroke:var(--area);stroke-width:6px;stroke-linejoin:round}
+.hsw{display:inline-flex;gap:6px;padding-right:12px;margin-right:4px;border-right:1px solid var(--rule)}
+.ic{display:block}
+@media (prefers-reduced-motion: reduce){.lf,.lbar,.lpath{transition:none}}
+.note{position:relative;transition:opacity 2s;max-width:62ch;margin:0 auto;text-align:center;font-size:13px;line-height:1.6;color:var(--mute)}
+.note p{margin:0}
+body.focusing .note{opacity:.4}
+</style>
+
+<div class="wrap">
+  <a class="home" href="index.html" lang="sv">← Tillbaks till menyn</a>
+  <div class="dimmer" aria-hidden="true"></div>
+  <header class="top">
+    <div class="titles"><h1>Wordless explanations</h1><p class="by">by Niklas Jonsson Kaino</p></div>
+    <div class="ops" id="ops" aria-hidden="true"></div>
+    <div class="legend"><span id="legend"></span><span class="dmsw ask" id="dmsw"></span></div>
+  </header>
+  <section class="sec" data-sec="sq"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 520"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="bet"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 480"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="ten"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 400"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="prod"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 330"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="quot"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 350"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="half"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 370"></svg>
+      <div class="bar"><span class="hsw" id="hsw"></span><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sum="1"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><div class="rules" id="rules"></div></div></section>
+  <footer class="note">
+    <p>The dot (·) is used for multiplication instead of the cross (×), so it can't be confused with the variable x.</p>
+    <p>The slash (/) is used for division instead of the obelus (÷), so it can't be confused with the plus sign (+).</p>
+  </footer>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg', CANCEL=Symbol('cancel');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CX=360, CW=.62;
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=t=>Math.max(0,Math.min(1,t));
+function el(tag,attrs,parent){ const e=document.createElementNS(NS,tag); if(attrs) for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+
+/* ───────── expression trees ───────── */
+const num=(t,key,cls)=>({t:'n',text:String(t),key,cls:cls||''});
+const opr=(t,key,cls)=>({t:'o',text:t,key,cls:cls||''});
+const cellN=(w,ch)=>({t:'c',w,ch});
+const row=(...ch)=>({t:'r',ch:ch.flat(9).filter(Boolean)});
+function frc(a,b,key,cls){ cls=cls||''; if(typeof a!=='object') a=num(a,key+'n',cls); if(typeof b!=='object') b=num(b,key+'d',cls); return {t:'f',nu:a,de:b,key,cls}; }
+const pw=(b,e)=>({t:'p',b,e});                                 // power: base with a raised exponent
+const brc=(c,lab,dir,key,cls)=>({t:'B',c,lab,dir,key,cls:cls||''}); // under- ('u') or overbrace ('o') with a count
+const par=(c,key)=>({t:'P',c,key});                            // brackets that grow to fit
+const strike=n=>({...n,strike:true});
+// the decimal mark (point or comma) is the viewer's choice
+let DM=','; try{ DM=localStorage.getItem('wl-decimal-mark')||','; }catch(e){}   // the comma unless the viewer has picked the point
+if(DM!=='.'&&DM!==',') DM=',';
+const dmk=(key,cls)=>({t:'d',key,cls:cls||''});   // the decimal mark, narrow so the digits stay close
+const arr=key=>({t:'A',key});
+const rt=(c,key,cls)=>({t:'R',c,key,cls:cls??'cF'});   // a root sign that grows to fit                      // a small arrow
+const isV=x=>typeof x==='string'&&/^[a-z]$/.test(x);
+const V=(t,key,cls)=>num(t,key,((cls||'')+' it').trim());
+const N=(x,key,cls)=>isV(x)?V(x,key,cls):num(x,key,cls);
+const X=(e,key,cls)=>typeof e==='object'?e:N(e,key,cls);
+
+const ks=k=>k!=null?k:undefined;
+function shift(l,dx,dy){ const q={...l};
+  if(q.kind==='p'){ q.x1+=dx; q.x2+=dx; q.y1+=dy; q.y2+=dy; }
+  else { if(q.kind==='b'){ q.x1+=dx; q.x2+=dx; } else q.x+=dx; q.y+=dy; }
+  return q; }
+function lay(node,s){
+  if(node.t==='R'){
+    const C=lay(node.c,s), lw=.62*s, top=-(Math.max(C.asc,.74*s)+.14*s), bot=Math.max(C.desc,.06*s)+.1*s, x2=lw+C.w+.08*s;
+    return {w:x2+.06*s,asc:-top+.06*s,desc:bot,leaves:[...C.leaves.map(l=>shift(l,lw,0)),{key:node.key,kind:'p',shape:'rt',cls:node.cls,x1:.04*s,x2,y1:top,y2:bot,s}]};
+  }
+  if(node.t==='d'){ const w=.36*s; return {w,asc:.74*s,desc:.16*s,leaves:[{key:node.key,kind:'t',text:DM,cls:node.cls,x:w/2,y:0,s}]}; }
+  if(node.t==='A'){ const w=1.1*s, y=-.3*s; return {w,asc:.5*s,desc:0,leaves:[{key:node.key,kind:'p',shape:'ar',cls:'',x1:.15*s,x2:w-.15*s,y1:y,y2:y,s}]}; }
+  if(node.t==='o'&&node.text==='/'){   // division: a large slash
+    const k=1.55, tw=CW*k*s, pad=.1*s, sh=.2*s;
+    return {w:tw+2*pad,asc:.74*k*s-sh,desc:sh+.06*s,leaves:[{key:node.key,kind:'t',text:'/',cls:node.cls,x:pad+tw/2,y:sh,s:k*s}]};
+  }
+  if(node.t==='n'||node.t==='o'){
+    const ell=node.text==='⋯', tw=(ell?1.3:[...node.text].length)*CW*s, pad=node.t==='o'?((node.text==='·'||ell)?.14:.34)*s:0;
+    const leaves=[{key:node.key,kind:'t',text:node.text,cls:node.cls,x:pad+tw/2,y:0,s}];
+    if(node.strike) leaves.push({key:node.key!=null?node.key+'.x':undefined,kind:'p',shape:'x',cls:'',x1:pad-.14*s,x2:pad+tw+.14*s,y1:.12*s,y2:-.84*s,s});
+    return {w:tw+2*pad,asc:.74*s,desc:.06*s,leaves};
+  }
+  if(node.t==='c'){
+    if(!node.ch) return {w:node.w,asc:0,desc:0,leaves:[]};
+    const L=lay(node.ch,s); return {w:node.w,asc:L.asc,desc:L.desc,leaves:L.leaves.map(l=>shift(l,(node.w-L.w)/2,0))};
+  }
+  if(node.t==='r'){
+    let x=0,asc=0,desc=0; const leaves=[];
+    for(const ch of node.ch){ const L=lay(ch,s); for(const l of L.leaves) leaves.push(shift(l,x,0)); x+=L.w; asc=Math.max(asc,L.asc); desc=Math.max(desc,L.desc); }
+    return {w:x,asc,desc,leaves};
+  }
+  if(node.t==='p'){
+    const B=lay(node.b,s), es=.62*s, E=lay(node.e,es), rise=Math.max(.4*s,B.asc-.5*es), gx=.04*s;
+    return {w:B.w+gx+E.w+.05*s,asc:Math.max(B.asc,rise+E.asc),desc:Math.max(B.desc,E.desc-rise),
+      leaves:[...B.leaves,...E.leaves.map(l=>shift(l,B.w+gx,-rise))]};
+  }
+  if(node.t==='B'){
+    const C=lay(node.c,s), ls=Math.max(.62*s,16), Lb=lay(node.lab,ls), w=Math.max(C.w,Lb.w), cx=(w-C.w)/2, lx=(w-Lb.w)/2;
+    const g=.14*s, bh=.3*s, ins=.05*s, leaves=C.leaves.map(l=>shift(l,cx,0)), key=node.key!=null?node.key+'.br':undefined;
+    if(node.dir==='u'){
+      const y1=C.desc+g, y2=y1+bh, yl=y2+.14*s+Lb.asc;
+      leaves.push({key,kind:'p',shape:'br',cls:node.cls,x1:cx+ins,x2:cx+C.w-ins,y1,y2,s});
+      Lb.leaves.forEach(l=>leaves.push(shift(l,lx,yl)));
+      return {w,asc:C.asc,desc:yl+Lb.desc,leaves};
+    }
+    const y1=-C.asc-g, y2=y1-bh, yl=y2-.14*s-Lb.desc;
+    leaves.push({key,kind:'p',shape:'br',cls:node.cls,x1:cx+ins,x2:cx+C.w-ins,y1,y2,s});
+    Lb.leaves.forEach(l=>leaves.push(shift(l,lx,yl)));
+    return {w,asc:-yl+Lb.asc,desc:C.desc,leaves};
+  }
+  if(node.t==='P'){
+    const C=lay(node.c,s), pw_=.36*s, asc=Math.max(C.asc,.74*s)+.1*s, desc=Math.max(C.desc,.06*s)+.16*s, kk=node.key;
+    const leaves=C.leaves.map(l=>shift(l,pw_,0));
+    leaves.push({key:kk!=null?kk+'.pl':undefined,kind:'p',shape:'pl',cls:'',x1:.05*s,x2:pw_-.02*s,y1:-asc,y2:desc,s});
+    leaves.push({key:kk!=null?kk+'.pr':undefined,kind:'p',shape:'pr',cls:'',x1:pw_+C.w+.02*s,x2:2*pw_+C.w-.05*s,y1:-asc,y2:desc,s});
+    return {w:C.w+2*pw_,asc,desc,leaves};
+  }
+  const T=lay(node.nu,s), B=lay(node.de,s), pad=.24*s, gap=(node.gap??.2)*s, ax=.3*s, w=Math.max(T.w,B.w)+2*pad;
+  const yT=-ax-gap-T.desc, yB=-ax+gap+B.asc, leaves=[];
+  for(const l of T.leaves) leaves.push(shift(l,(w-T.w)/2,yT));
+  for(const l of B.leaves) leaves.push(shift(l,(w-B.w)/2,yB));
+  leaves.push({key:node.key!=null?node.key+'.bar':undefined,kind:'b',cls:node.cls,x1:pad*.4,x2:w-pad*.4,y:-ax,s});
+  return {w,asc:-yT+T.asc,desc:yB+B.desc,leaves};
+}
+function pathD(l){
+  const {x1,x2,y1,y2}=l, ym=(y1+y2)/2;
+  if(l.shape==='x') return `M${x1} ${y1}L${x2} ${y2}`;
+  if(l.shape==='rt'){ const s=l.s; return `M${x1} ${y2-.4*s}L${x1+.13*s} ${y2-.48*s}L${x1+.3*s} ${y2}L${x1+.5*s} ${y1}L${x2} ${y1}`; }
+  if(l.shape==='ar'){ const h=.18*l.s; return `M${x1} ${y1}L${x2} ${y1}M${x2-h} ${y1-h}L${x2} ${y1}L${x2-h} ${y1+h}`; }
+  if(l.shape==='pl') return `M${x2} ${y1}Q${2*x1-x2} ${ym} ${x2} ${y2}`;
+  if(l.shape==='pr') return `M${x1} ${y1}Q${2*x2-x1} ${ym} ${x1} ${y2}`;
+  const xm=(x1+x2)/2, q=Math.min(Math.abs(y2-y1)*.9,(x2-x1)/4);
+  return `M${x1} ${y1}Q${x1} ${ym} ${x1+q} ${ym}L${xm-q} ${ym}Q${xm} ${ym} ${xm} ${y2}Q${xm} ${ym} ${xm+q} ${ym}L${x2-q} ${ym}Q${x2} ${ym} ${x2} ${y1}`;
+}
+const klassOf=l=>(l.kind==='t'?'lf ':l.kind==='b'?'lbar ':'lpath ')+l.cls;
+function mkLeaf(parent,l){
+  const e=el(l.kind==='t'?'text':l.kind==='b'?'line':'path',{class:klassOf(l)},parent);
+  if(l.kind==='t'){ e.setAttribute('text-anchor','middle'); e.textContent=l.text; }
+  setLeaf(e,l); return e;
+}
+function setLeaf(e,l){
+  if(l.kind==='t'){ e.setAttribute('x',l.x); e.setAttribute('y',l.y); e.setAttribute('font-size',l.s); }
+  else if(l.kind==='b'){ e.setAttribute('x1',l.x1); e.setAttribute('x2',l.x2); e.setAttribute('y1',l.y); e.setAttribute('y2',l.y); e.setAttribute('stroke-width',Math.max(1.6,l.s*.07)); }
+  else { e.setAttribute('d',pathD(l)); e.setAttribute('stroke-width',Math.max(1.6,l.s*(l.shape==='br'?.06:.075))); }
+}
+function mixLeaf(a,b,t,dx,dy){
+  const q={...b};
+  if(b.kind==='t'){ q.x=lerp(a.x,b.x,t)+(dx||0); q.y=lerp(a.y,b.y,t)+(dy||0); q.s=lerp(a.s,b.s,t); }
+  else if(b.kind==='b'){ q.x1=lerp(a.x1,b.x1,t)+(dx||0); q.x2=lerp(a.x2,b.x2,t)+(dx||0); q.y=lerp(a.y,b.y,t)+(dy||0); }
+  else { q.x1=lerp(a.x1,b.x1,t)+(dx||0); q.x2=lerp(a.x2,b.x2,t)+(dx||0); q.y1=lerp(a.y1,b.y1,t)+(dy||0); q.y2=lerp(a.y2,b.y2,t)+(dy||0); q.s=lerp(a.s,b.s,t); }
+  return q;
+}
+const sameLeaf=(a,b)=>a.kind==='t'?(a.x===b.x&&a.y===b.y&&a.s===b.s):a.kind==='b'?(a.x1===b.x1&&a.x2===b.x2&&a.y===b.y):(a.x1===b.x1&&a.x2===b.x2&&a.y1===b.y1&&a.y2===b.y2);
+const mid=l=>l.kind==='t'?[l.x,l.y-.32*l.s]:l.kind==='b'?[(l.x1+l.x2)/2,l.y]:[(l.x1+l.x2)/2,(l.y1+l.y2)/2];
+
+/* products:  a · a · a  or  a · a · ⋯ · a · a  (ids ending in 'e' are the dots ⋯) */
+const isE=id=>id.endsWith('e');
+const SL=c=>typeof c==='number'?[...Array(c)].map((_,i)=>String(i)):['0','1','e','3','4'];
+function prod(P,ids,fac,sep){ const out=[]; ids.forEach((id,i)=>{ if(i) out.push(sep?sep(ids[i-1]):opr('·',P+'m'+ids[i-1])); out.push(isE(id)?opr('⋯',P+id):fac(id)); }); return row(out); }
+const W=(node,s)=>lay(node,s).w;
+const ph=(node,s)=>cellN(W(node,s));
+const cps=(P,ids,src)=>Object.fromEntries(ids.filter(i=>!isE(i)).map(i=>[P+i,src]));
+// numerator and denominator padded on the left to one width, so matching factors stand straight above each other at the right
+const G=f=>({...f,gap:.42});   // roomier fraction for long rows of factors
+function fracL(T,B,key,s){ const a=W(T,s), b=W(B,s); return G(frc(row(a<b?cellN(b-a):null,T),row(b<a?cellN(a-b):null,B),key)); }
+
+/* ───────── stage + animation context ───────── */
+class Stage{
+  constructor(svg){ this.svg=svg; this.gen=0; this.introDone=false; this.acc=0; this.pausedAt=null; }
+  now(){ return (this.pausedAt??performance.now())-this.acc; }
+  pause(){ if(this.pausedAt==null) this.pausedAt=performance.now(); }
+  resume(){ if(this.pausedAt!=null){ this.acc+=performance.now()-this.pausedAt; this.pausedAt=null; } }
+  get paused(){ return this.pausedAt!=null; }
+  play(script,keep,focus){
+    this.resume(); this.onplay&&this.onplay(!!focus);
+    const gen=++this.gen; if(!keep) this.introDone=false; this.instant=false; this.svg.textContent='';
+    this.L={}; for(const k of ['marks','eq','fx']) this.L[k]=el('g',{},this.svg);
+    return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
+      .finally(()=>{ if(this.gen===gen&&focus&&this.onend) this.onend(); });
+  }
+}
+class Ctx{
+  constructor(st,gen){ this.st=st; this.gen=gen; this.cur=new Map(); this.lines={}; }
+  /* everything runs on the stage clock, which stands still while paused */
+  run(d,fn,raw){
+    const st=this.st, gen=this.gen;
+    return new Promise((res,rej)=>{
+      if(st.gen!==gen) return rej(CANCEL);
+      if(d<=0){ fn&&fn(1); return res(); }
+      const t0=st.now();
+      const step=()=>{ if(st.gen!==gen) return rej(CANCEL); const t=Math.min(1,(st.now()-t0)/d); fn&&fn(raw?t:ease(t)); t<1?requestAnimationFrame(step):res(); };
+      requestAnimationFrame(step);
+    });
+  }
+  tw(dur,fn,raw){ return this.run((this.st.instant||RM)?0:dur,fn,raw); }
+  wait(ms){ return this.run(this.st.instant?0:ms,null); }
+  /* swell up, give a small playful wiggle, then settle back */
+  wiggle(keys,dur=1400){
+    const items=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!items.length) return Promise.resolve();
+    const ps=items.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), ys=ps.map(p=>p[1]);
+    const cx=(Math.min(...xs)+Math.max(...xs))/2, cy=(Math.min(...ys)+Math.max(...ys))/2;
+    return this.tw(dur,t=>{
+      const k=1+.09*Math.sin(Math.PI*t), a=4*Math.sin(4*Math.PI*t)*Math.sin(Math.PI*t);
+      items.forEach(c=>c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) rotate(${a}) scale(${k}) translate(${-cx} ${-cy})`));
+    });
+  }
+  /* grow briefly and glow a little, then settle back */
+  glow(key,dur=1000){
+    const c=this.cur.get(key); if(!c) return Promise.resolve(); const [cx,cy]=mid(c.spec);
+    return this.tw(dur,t=>{ const p=Math.sin(Math.PI*t), k=1+.6*p;
+      c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`);
+      c.el.style.filter=t>=1?'':`drop-shadow(0 0 ${6*p}px var(--cF))`; });
+  }
+  all(...ps){ return Promise.all(ps); }
+  /* a small green 10 jumps in an arc from one place to another */
+  flyTen(from,to,s,dur=1300){
+    const e=mkLeaf(this.st.L.fx,{kind:'t',text:'10',cls:'cF',x:from[0],y:from[1],s:.5*s}), h=Math.max(.9*s,Math.abs(to[0]-from[0])*.3);
+    e.setAttribute('opacity',0);
+    return this.tw(dur,t=>{ const x=lerp(from[0],to[0],t), y=lerp(from[1],to[1],t)-h*Math.sin(Math.PI*t);
+      e.setAttribute('x',x); e.setAttribute('y',y+.16*s); e.setAttribute('opacity',Math.min(clamp(t/.2),1-clamp((t-.75)/.25)));
+      if(t>=1) e.remove(); });
+  }
+  /* a part that breaks a rule pulses gently between ink and red, then settles back */
+  pulseRed(keys,dur=2600){
+    const cs=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!cs.length) return Promise.resolve();
+    const ps=cs.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), cx=(Math.min(...xs)+Math.max(...xs))/2, cy=ps[0][1];
+    return this.tw(dur,t=>{ const p=Math.sin(Math.PI*((t*2)%1)), k=1+.12*p;
+      cs.forEach(c=>{ c.el.style.fill=t>=1?'':`color-mix(in srgb, var(--cR) ${Math.round(p*100)}%, var(--ink))`;
+        c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`); }); },true);
+  }
+  dimK(keys,on){ keys.forEach(k=>{ const c=this.cur.get(k); if(c) c.el.classList.toggle('dim',on); }); }
+  cfg(line,c){ this.lines[line]=c; }
+
+  async begin(tree,c){
+    const def={cx:CX,y:92,s:34}, intro=this.st.introDone; this.st.introDone=false;
+    if(intro){
+      this.cfg('main',def); const sv=this.st.instant; this.st.instant=true; await this.show('main',tree); this.st.instant=sv;
+      if(c){ this.cfg('main',c); await this.show('main',tree,{dur:1200}); }
+      await this.wait(500);
+    } else { this.cfg('main',c||def); await this.show('main',tree); await this.wait(900); }
+  }
+
+  /* morph one line of math into a new tree: shared keys glide, changed numbers crossfade, copies grow out of their originals, new parts fade in last */
+  async show(line,tree,op={}){
+    const cfg=this.lines[line]||(this.lines[line]={cx:CX,y:92,s:34});
+    const Lt=lay(tree,cfg.s), x0=cfg.al==='l'?cfg.cx:cfg.cx-Lt.w/2;   // al:'l' keeps the left edge still
+    const next=new Map(); for(const l of Lt.leaves) if(l.key!=null) next.set(l.key,shift(l,x0,cfg.y));
+    const P=this.st.L.eq, A=[], C=[], fins=[], drop=[], copies=[];
+    const cv=k=>{ const v=op.curve&&op.curve[k]; return typeof v==='number'?[v,0]:v?[v.x||0,v.y||0]:[0,0]; };
+    const klass=(spec,dim)=>klassOf(spec)+(dim?' dim':'');
+    for(const [k,spec] of next){
+      const c=this.cur.get(k);
+      if(c){
+        const from=c.spec, dim=c.el.classList.contains('dim'), [rx,ry]=cv(k);
+        if(spec.kind==='t'&&spec.text!==from.text){
+          const oe=c.el, ne=mkLeaf(P,{...from,text:spec.text}); ne.setAttribute('class',klass(spec,dim)); ne.setAttribute('opacity',0);
+          A.push(t=>{ const m=mixLeaf(from,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t)); setLeaf(oe,m); setLeaf(ne,m); oe.setAttribute('opacity',1-t); ne.setAttribute('opacity',t); });
+          drop.push(oe); c.el=ne;
+        } else {
+          c.el.setAttribute('class',klass(spec,dim));
+          if(!sameLeaf(from,spec)){ const e=c.el; A.push(t=>setLeaf(e,mixLeaf(from,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t)))); }
+        }
+        c.spec=spec; c.line=line;
+      } else {
+        const sk=op.from&&op.from[k];
+        if(sk) copies.push([k,spec,sk]);
+        else { const e=mkLeaf(P,spec); e.setAttribute('opacity',0); fins.push({e,spec}); this.cur.set(k,{el:e,spec,line}); }
+      }
+    }
+    const gone=[], goneSpec=new Map();
+    for(const [k,c] of this.cur) if(c.line===line&&!next.has(k)){ const o=c.el.getAttribute('opacity'); gone.push([c.el,o==null?1:+o]); goneSpec.set(k,c.spec); this.cur.delete(k); }
+    // 1: the originals settle into their new places
+    // sync: new parts fade in while the others move, instead of after
+    if(A.length||gone.length) await this.tw(op.dur??1000,t=>{ A.forEach(fn=>fn(t)); gone.forEach(([e,o])=>e.setAttribute('opacity',o*(1-t))); if(op.sync) fins.forEach(({e})=>e.setAttribute('opacity',t)); });
+    if(op.sync&&(A.length||gone.length)) fins.length=0;
+    gone.forEach(([e])=>e.remove()); drop.forEach(e=>e.remove());
+    // 2: copies grow out of the settled originals
+    for(const [k,spec,sk] of copies){
+      const src=(this.cur.get(sk)||{}).spec||goneSpec.get(sk);
+      if(!src||src.kind!==spec.kind){ const e=mkLeaf(P,spec); e.setAttribute('opacity',0); fins.push({e,spec}); this.cur.set(k,{el:e,spec,line}); continue; }
+      const start=spec.kind==='t'?{...spec,x:src.x,y:src.y,s:src.s}:spec.kind==='b'?{...spec,x1:src.x1,x2:src.x2,y:src.y}:{...spec,x1:src.x1,x2:src.x2,y1:src.y1,y2:src.y2};
+      const e=mkLeaf(P,start), [rx,ry]=cv(k); e.setAttribute('opacity',0);
+      C.push(t=>{ setLeaf(e,mixLeaf(start,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t))); e.setAttribute('opacity',Math.min(1,t*1.5)); });
+      this.cur.set(k,{el:e,spec,line});
+    }
+    const side=op.during?op.during():null;
+    if(C.length) await this.tw(op.dur2??op.dur??1100,t=>C.forEach(fn=>fn(t)));
+    // 3: brand-new parts fade in; a brace grows out from its middle, a strike is drawn
+    fins.forEach(({e,spec})=>{ if(spec.shape==='x'||spec.shape==='rt'){ e.setAttribute('pathLength',1); e.setAttribute('stroke-dasharray','1 2'); e.setAttribute('stroke-dashoffset',1); } });
+    if(fins.length) await this.tw(op.fade??850,t=>fins.forEach(({e,spec})=>{
+      if(spec.shape==='x'||spec.shape==='rt'){ e.setAttribute('opacity',t>0?1:0); e.setAttribute('stroke-dashoffset',1-t); }
+      else if(spec.shape==='br'){ const xm=(spec.x1+spec.x2)/2; setLeaf(e,{...spec,x1:lerp(xm,spec.x1,t),x2:lerp(xm,spec.x2,t)}); e.setAttribute('opacity',Math.min(1,t*2)); }
+      else e.setAttribute('opacity',t); }));
+    if(side) await side;
+  }
+  focus(keys){ const set=keys?new Set(keys):null; for(const [k,c] of this.cur) c.el.classList.toggle('dim',!!set&&!set.has(k)); }
+  async floatGroup(keys,to,op={}){
+    const items=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!items.length) return;
+    const ps=items.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), ys=ps.map(p=>p[1]);
+    const dx=to.x-(Math.min(...xs)+Math.max(...xs))/2, dy=to.y-(Math.min(...ys)+Math.max(...ys))/2;
+    const cl=items.map(c=>{ const e=mkLeaf(this.st.L.fx,c.spec); return {e,a:c.spec,b:shift(c.spec,dx,dy)}; });
+    await this.tw(op.dur??1200,t=>cl.forEach(q=>{ setLeaf(q.e,mixLeaf(q.a,q.b,t)); q.e.setAttribute('opacity',.55*(t<.8?Math.min(1,t*5):(1-t)/.2)); }));
+    cl.forEach(q=>q.e.remove());
+  }
+  fadeIn(els,dur=800){ els=[].concat(els).filter(Boolean); els.forEach(e=>e.setAttribute('opacity',0)); return this.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',t))); }
+  async fadeOut(els,dur=800){ els=[].concat(els).filter(Boolean); await this.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',1-t))); els.forEach(e=>e.remove()); }
+}
+
+/* ───────── squares on the stage ───────── */
+const CS=26;      // one unit cell
+const LX=330;     // where the "=" of the working lines stands
+function box(S,x,y,w,h,cls){ return el('rect',{x,y,width:w,height:h,class:cls,opacity:0},S.st.L.marks); }
+function seg(S,x1,y1,x2,y2,cls){ return el('line',{x1,y1,x2,y2,class:cls,opacity:0},S.st.L.marks); }
+// a shape grows out of its own middle
+function growIn(S,e,dur=1000){
+  const x=+e.getAttribute('x'), y=+e.getAttribute('y'), w=+e.getAttribute('width'), h=+e.getAttribute('height');
+  return S.tw(dur,t=>{ const k=.7+.3*t; e.setAttribute('x',x+w*(1-k)/2); e.setAttribute('y',y+h*(1-k)/2); e.setAttribute('width',w*k); e.setAttribute('height',h*k); e.setAttribute('opacity',t); });
+}
+const opac=(S,els,a,b,dur=800)=>S.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',lerp(a,b,t))));
+/* a condition such as x ≥ 0: it pulses between ink and red, and stays red */
+async function restrict(S,c,tree){
+  S.cfg('nz',c); await S.wait(600);
+  await S.show('nz',tree,{fade:800});
+  const cs=[...S.cur.values()].filter(q=>q.line==='nz'), ps=cs.map(q=>mid(q.spec)), xs=ps.map(p=>p[0]);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2, cy=ps[0][1];
+  await S.tw(3600,t=>{ const u=t*3, p=Math.sin(Math.PI*(u%1)), red=u>=2.5?1:p, k=1+.14*p;
+    cs.forEach(c=>{ c.el.style.fill=`color-mix(in srgb, var(--cR) ${Math.round(red*100)}%, var(--ink))`;
+      c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`); }); },true);
+}
+const geq=(v,k,op='≥')=>row(V(v,'n'+k+'v'),opr(op,'n'+k+'o'),num(0,'n'+k+'0'));
+
+/* ───────── 1 · a square of n by n cells, and back from its area to its side ───────── */
+const startSq=E=>pw(num(E.n,'b','cA'),num(2,'e','cF'));
+async function runSq(S,E){
+  const n=E.n, N=n*n, side=n*CS, x0=CX-side/2, yb=350, s=36, ls=24, ws=30;
+  const fin=row(startSq(E),opr('=','q1'),num(n,'m1','cA'),opr('·','mm'),num(n,'m2','cA'),opr('=','q2'),num(N,'res','cO'));
+  await S.begin(startSq(E),{cx:CX-W(fin,s)/2,y:62,s,al:'l'});
+  const yr=k=>yb-(k+1)*CS;                       // top of row k, counted from the bottom
+  // the base floats down to the bottom edge, and a row of n cells is laid along it
+  S.cfg('sb',{cx:CX,y:yb+32,s:ls});
+  await S.show('sb',num(n,'sb','cA'),{from:{sb:'b'},dur2:1300}); await S.wait(300);
+  const mkRow=y=>[...Array(n)].map((_,i)=>box(S,x0+i*CS,y,CS,CS,'cell'));
+  const r0=mkRow(yr(0)), T=350+n*120;
+  await S.tw(T,t=>r0.forEach((e,i)=>e.setAttribute('opacity',clamp((t*T-i*120)/350))),true);
+  // the rows are counted up the left side, and the cells so far at the right
+  const lw=W(num(n),ls), tc=k=>({cx:x0+side+14,y:yr(k)+CS/2+6,s:18,al:'l'});
+  S.cfg('sl',{cx:x0-14-lw/2,y:yr(0)+CS/2+.32*ls,s:ls}); S.cfg('t0',tc(0));
+  await S.all(S.show('sl',num(1,'sl','cA'),{fade:500}),S.show('t0',num(n,'t0','mut'),{fade:500})); await S.wait(500);
+  for(let k=1;k<n;k++){
+    const nr=mkRow(yr(k-1)), y1=yr(k-1), y2=yr(k);
+    S.cfg('sl',{cx:x0-14-lw/2,y:yb-(k+1)*CS/2+.32*ls,s:ls}); S.cfg('t'+k,tc(k));
+    await S.all(S.tw(650,t=>nr.forEach(e=>{ e.setAttribute('y',lerp(y1,y2,t)); e.setAttribute('opacity',t); })),
+                S.show('sl',num(k+1,'sl','cA'),{dur:650}));
+    await S.show('t'+k,num((k+1)*n,'t'+k,'mut'),{fade:350});
+    await S.wait(n>6?120:300);
+  }
+  await S.wait(700);
+  // side times side: both sides go up into the expression, then the number of cells
+  await S.show('main',row(startSq(E),opr('=','q1'),num(n,'m1','cA'),opr('·','mm'),num(n,'m2','cA')),{from:{m1:'sb',m2:'sl'},dur2:1300});
+  await S.wait(700);
+  await S.show('t'+(n-1),num(N,'t'+(n-1),'cO'),{dur:600}); await S.wait(300);
+  await S.show('main',fin,{from:{res:'t'+(n-1)},dur2:1300}); await S.wait(400);
+  await S.glow('res'); await S.wait(1000);
+  /* and back: from the area to the side */
+  // the counts step aside, and the area stands in the middle of the square
+  await S.all(...[...Array(n)].map((_,k)=>S.show('t'+k,row(),{dur:700})));
+  const as=Math.round(Math.min(30,Math.max(14,side*.42)));
+  S.cfg('ac',{cx:CX,y:yb-side/2+.32*as,s:as});
+  await S.show('ac',num(N,'ac','cO halo'),{from:{ac:'res'},dur2:1300}); await S.wait(700);
+  const ax=CX-W(row(num(N),opr('/'),num(n),opr('='),num(n)),ws)/2;
+  S.cfg('pb',{cx:ax,y:432,s:ws,al:'l'}); S.cfg('pa',{cx:ax,y:496,s:ws,al:'l'});
+  // the area divided by the side gives the side again
+  await S.show('pb',row(num(N,'b1','cO'),opr('/','bd'),num(n,'b2','cA'),opr('=','bq'),num(n,'b3','cA')),{from:{b1:'ac',b2:'sb'},dur2:1300});
+  await S.wait(700);
+  await S.wiggle(['b2','b3'],2500); await S.wait(800);
+  // last, the root of the area ...
+  await S.show('pa',rt(num(N,'a3','cO'),'ar'),{from:{a3:'ac'},dur2:1300}); await S.wait(800);
+  // ... is the side: the cells along the bottom light up
+  const tb=[...Array(n)].map((_,i)=>box(S,x0+i*CS,yb-CS,CS,CS,'tint')), TT=380+n*110;
+  await S.tw(TT,t=>tb.forEach((e,i)=>e.setAttribute('opacity',clamp((t*TT-i*110)/380))),true); await S.wait(300);
+  await S.show('pa',row(rt(num(N,'a3','cO'),'ar'),opr('=','aq'),num(n,'a1','cA')),{from:{a1:'sb'},dur2:1300}); await S.wait(600);
+  await opac(S,tb,1,0,800); await S.wait(200);
+  await S.glow('a1');
+}
+
+/* ───────── 2 · roots between the perfect squares ───────── */
+// a decimal written digit by digit, so changed digits crossfade and the mark stays narrow
+function dn(str,P,cls){ const it=[]; let j=0; for(const ch of String(str)){ if(ch==='.') it.push(dmk(P+'p',cls)); else it.push(num(ch,P+(j++),cls)); } return row(it); }
+const dnFrom=(P,Q,str)=>{ const m={[P+'p']:Q+'p'}; let j=0; for(const ch of String(str)) if(ch!=='.'){ m[P+j]=Q+j; j++; } return m; };
+// the square of a decimal, exactly: 3.1 → 9.61
+function sqS(str){ const [i,f='']=String(str).split('.'), d=2*f.length, m=(BigInt(i+f)**2n).toString().padStart(d+1,'0'); return d?m.slice(0,-d)+'.'+m.slice(-d):m; }
+// the root of N rounded down to k decimals, the next value up, and the first in hundredths
+function bounds(N,k){ const X=BigInt(N)*10n**BigInt(2*k); let m=BigInt(Math.floor(Math.sqrt(Number(X))));
+  while((m+1n)**2n<=X) m++; while(m*m>X) m--;
+  const f=v=>{ const t=v.toString().padStart(k+1,'0'); return k?t.slice(0,-k)+'.'+t.slice(-k):t; };
+  return [f(m),f(m+1n),Number(m)*10**(2-k)]; }
+/* the number line: the band between the two bounds is squeezed from both sides */
+const NL={x0:120,x1:600,y:414};
+function numLine(S,lo,hi){
+  const g=el('g',{},S.st.L.marks), st={vlo:lo,vhi:hi,tk:[[100,1],[10,1],[1,0],[.1,0]],blo:lo,bhi:hi,band:0,ax:0,labs:[]};
+  const X=v=>NL.x0+(v-st.vlo)/(st.vhi-st.vlo)*(NL.x1-NL.x0);
+  st.draw=()=>{ g.textContent='';
+    el('line',{x1:NL.x0-40,x2:NL.x1+40,y1:NL.y,y2:NL.y,class:'nlax',opacity:st.ax},g);
+    el('rect',{x:X(st.blo),y:NL.y-12,width:Math.max(0,X(st.bhi)-X(st.blo)),height:24,rx:3,class:'band',opacity:st.band},g);
+    st.tk.forEach(([stp,o])=>{ const px=stp/(st.vhi-st.vlo)*(NL.x1-NL.x0); if(o<=0||px<4) return; const h=px>=300?13:px>=30?8:5;
+      for(let i=Math.ceil(st.vlo/stp-1e-6); i*stp<=st.vhi+1e-6; i++) el('line',{x1:X(i*stp),x2:X(i*stp),y1:NL.y-h,y2:NL.y+h,class:'nltk',opacity:o*st.ax},g); });
+    st.labs.forEach(l=>{ if(l.o<=0) return; const e=mkLeaf(g,{kind:'t',text:l.t.replace('.',DM),cls:'cA',x:X(l.v)+(l.a==='end'?6:-6),y:NL.y+40,s:20});
+      e.setAttribute('text-anchor',l.a); e.setAttribute('opacity',l.o); });
+  };
+  st.draw(); return st;
+}
+const startBet=E=>rt(num(E.N,'n'),'r');
+const dKeys=(P,str)=>{ const ks=[P+'p']; let j=0; for(const ch of String(str)) if(ch!=='.') ks.push(P+(j++)); return ks; };
+async function runBet(S,E){
+  const N=E.N, r=Math.floor(Math.sqrt(N)), s=26, P0=startBet(E), B=[...Array(E.d+1)].map((_,k)=>bounds(N,k));
+  const last=B[E.d][0], fin=row(P0,opr('=','mq'),dn(last,'m','cA'),num('…','me'));
+  const cx0=E.d?480:CX;          // with trials, the working stands to the right of them
+  await S.begin(P0,{cx:CX-W(E.d?fin:P0,34)/2,y:58,s:34,al:'l'});
+  // between two perfect squares
+  S.cfg('A',{cx:cx0,y:150,s});
+  await S.show('A',row(num(r*r,'a1','cO'),opr('<','al'),num(N,'a2'),opr('<','ar'),num((r+1)**2,'a3','cO')),{from:{a2:'n'},dur2:1300}); await S.wait(1100);
+  // so the root is between their roots; the root in the middle stays put
+  const wl=W(dn(last,'x'),s), pad=node=>cellN(Math.max(0,wl-W(node,s)));
+  const RB=(lo,hi)=>row(pad(dn(lo,'x')),dn(lo,'lo','cA'),opr('<','bl'),rt(num(N,'b2'),'br2'),opr('<','bm'),dn(hi,'hi','cA'));
+  const L0=rt(num(r*r,'b1','cO'),'br1');
+  S.cfg('B',{cx:cx0-W(RB(last,B[E.d][1]),s)/2,y:232,s,al:'l'});
+  await S.show('B',row(pad(L0),L0,opr('<','bl'),rt(num(N,'b2'),'br2'),opr('<','bm'),rt(num((r+1)**2,'b3','cO'),'br3')),{from:{b1:'a1',b2:'a2',b3:'a3'},dur2:1300}); await S.wait(1100);
+  await S.show('B',RB(String(r),String(r+1)),{dur:1300,sync:true}); await S.wait(800);
+  // the number line between them
+  const nl=numLine(S,r*100,(r+1)*100); let labLo={v:r*100,t:String(r),o:0,a:'end'}, labHi={v:(r+1)*100,t:String(r+1),o:0,a:'start'}; nl.labs.push(labLo,labHi);
+  await S.tw(1000,t=>{ nl.ax=t; labLo.o=labHi.o=t; nl.draw(); });
+  await S.tw(800,t=>{ nl.band=t; nl.draw(); }); await S.wait(800);
+  if(!E.d) return S.wiggle(['b2','br2'],2200);
+  // one edge of the band moves in, and its label changes with it
+  const edge=async(lower,str,v,dur=900)=>{
+    const old=lower?labLo:labHi, nw={v:old.v,t:str,o:0,a:old.a}, v0=lower?nl.blo:nl.bhi; nl.labs.push(nw);
+    await S.tw(dur,t=>{ const x=lerp(v0,v,t); if(lower) nl.blo=x; else nl.bhi=x; old.v=nw.v=x; old.o=1-t; nw.o=t; nl.draw(); });
+    nl.labs.splice(nl.labs.indexOf(old),1); if(lower) labLo=nw; else labHi=nw;
+  };
+  let used=0;
+  for(let k=1;k<=E.d;k++){
+    if(k>1){ // zoom in on the band, finer ticks appear, and the earlier tries step aside
+      const a0=nl.vlo, b0=nl.vhi, a1=nl.blo, b1=nl.bhi;
+      await S.all(S.tw(1500,t=>{ nl.vlo=lerp(a0,a1,t); nl.vhi=lerp(b0,b1,t); nl.tk[k][1]=t; nl.draw(); }),
+                  ...[...Array(used)].map((_,j)=>S.show('T'+j,row(),{dur:900}))); await S.wait(600);
+    }
+    // try one value after another, each a step bigger, until its square is too big
+    const fK=m=>{ const t=m.toString().padStart(k+1,'0'); return t.slice(0,-k)+'.'+t.slice(-k); };
+    const m0=BigInt(B[k-1][0].replace('.',''))*10n, X=BigInt(N)*10n**BigInt(2*k), Q='p'+k;
+    let below={v:fK(m0),q:sqS(fK(m0)),K:null}, j=0;
+    for(let m=m0+1n;;m++,j++){
+      const v=fK(m), q=sqS(v), K='t'+k+'_'+j, hv=Number(m)*10**(2-k);
+      S.cfg('T'+j,{cx:40,y:110+30*j,s:20,al:'l'});
+      await S.show('T'+j,row(pw(dn(v,K+'v','cA'),num(2,K+'e','cF')),opr('=',K+'q'),dn(q,K+'s','cO')),{fade:650}); await S.wait(300);
+      if(m*m<=X){ await edge(true,v,hv); below={v,q,K}; await S.wait(300); continue; }
+      // too big: it pulses red, and closes the band from above
+      await S.pulseRed(dKeys(K+'s',q),1800);
+      await edge(false,v,hv); await S.wait(600);
+      // the two squares that hold N between them, then the two bounds
+      const from={...dnFrom(Q+'n',K+'s',q),[Q+'N']:'n'}; if(below.K) Object.assign(from,dnFrom(Q+'m',below.K+'s',below.q));
+      await S.show('A',row(dn(below.q,Q+'m','cO'),opr('<',Q+'c1'),num(N,Q+'N'),opr('<',Q+'c2'),dn(q,Q+'n','cO')),{from,dur2:1300}); await S.wait(900);
+      await S.show('B',RB(below.v,v),{dur:1300}); await S.wait(1000);
+      break;
+    }
+    used=j+1;
+  }
+  // the digits found so far, and more that never end
+  await S.show('main',fin,{from:dnFrom('m','lo',last),dur2:1300}); await S.wait(300);
+  await S.glow('me');
+}
+
+/* ───────── 3 · tens and hundreds, then any area ───────── */
+const SQ={x:70,y:126,w:180}, LY=[80,150,220,290,360], L3=350;   // part 3: the square at the left, the working at the right
+const p10=z=>Number('1'+'0'.repeat(z));
+const sideCfg=(S,node)=>{ S.cfg('sb',{cx:SQ.x+SQ.w/2,y:SQ.y+SQ.w+32,s:26}); S.cfg('sl',{cx:SQ.x-14-W(node,26)/2,y:SQ.y+SQ.w/2+.32*26,s:26}); };
+const areaCfg=S=>S.cfg('ac',{cx:SQ.x+SQ.w/2,y:SQ.y+SQ.w/2+.32*30,s:30});
+const lineCfg=(S,k,lead)=>S.cfg('w'+k,{cx:L3-(lead?W(lead,30):0),y:LY[k],s:30,al:'l'});
+const pairT=(P,d,T)=>par(row(num(d,P+'a','cA'),opr('·',P+'x'),num(T,P+'t','cF')),P+'p');
+const fourT=(d,T)=>row(opr('=','w2q'),num(d,'w2a','cA'),opr('·','w2m'),num(d,'w2b','cA'),opr('·','w2n'),num(T,'w2t','cF'),opr('·','w2o'),num(T,'w2u','cF'));
+
+const startUp=E=>pw(num(E.d*p10(E.z),'b','cA'),num(2,'e','cF'));
+async function runUp(S,E){
+  const d=E.d, T=p10(E.z), A=d*T, P=startUp(E);
+  await S.begin(P,{cx:L3-W(P,30),y:LY[0],s:30,al:'l'});
+  // the base floats to the sides, and the square grows between them
+  const sq=box(S,SQ.x,SQ.y,SQ.w,SQ.w,'area'); sideCfg(S,num(A)); areaCfg(S);
+  await S.show('sb',num(A,'sb','cA'),{from:{sb:'b'},dur2:1300});
+  await S.show('sl',num(A,'sl','cA'),{from:{sl:'sb'},dur2:1100});
+  await growIn(S,sq,1000); await S.wait(600);
+  await S.show('main',row(P,opr('=','q'),num(A,'m1','cA'),opr('·','mm'),num(A,'m2','cA')),{from:{m1:'sb',m2:'sl'},dur2:1300}); await S.wait(900);
+  // each side is a number times a power of ten
+  lineCfg(S,1);
+  await S.show('w1',row(opr('=','w1q'),pairT('w1',d,T),opr('·','w1m'),pairT('w1b',d,T)),{from:{w1a:'m1',w1t:'m1',w1ba:'m2',w1bt:'m2'},dur2:1300}); await S.wait(1000);
+  // the numbers together, the tens together
+  lineCfg(S,2);
+  await S.show('w2',fourT(d,T),{from:{w2a:'w1a',w2b:'w1ba',w2t:'w1t',w2u:'w1bt'},curve:{w2b:{y:-26},w2t:{y:26}},dur2:1400}); await S.wait(1000);
+  lineCfg(S,3);
+  await S.show('w3',row(opr('=','w3q'),num(d*d,'w3a'),opr('·','w3m'),num(T*T,'w3t','cF')),{from:{w3a:'w2a',w3t:'w2t'},dur2:1200}); await S.wait(1000);
+  lineCfg(S,4);
+  await S.show('w4',row(opr('=','w4q'),num(A*A,'w4','cO')),{from:{w4:'w3a'},dur2:1200}); await S.wait(800);
+  // that is the area of the square
+  await S.show('ac',num(A*A,'ac','cO halo'),{from:{ac:'w4'},dur2:1400}); await S.wait(300);
+  await S.glow('ac');
+}
+
+const startDown=E=>rt(num((E.d*p10(E.z))**2,'a','cO'),'r');
+async function runDown(S,E){
+  const d=E.d, T=p10(E.z), A=d*T, N=A*A, P=startDown(E);
+  await S.begin(P,{cx:L3-W(P,30),y:LY[0],s:30,al:'l'});
+  const sq=box(S,SQ.x,SQ.y,SQ.w,SQ.w,'area'); areaCfg(S);
+  await S.show('ac',num(N,'ac','cO halo'),{from:{ac:'a'},dur2:1300});
+  await growIn(S,sq,1000); await S.wait(700);
+  // the area as a number times a power of ten
+  lineCfg(S,1,num(N));
+  await S.show('w1',row(num(N,'w1n','cO'),opr('=','w1q'),num(d*d,'w1d','cA'),opr('·','w1m'),num(T*T,'w1t','cF')),{from:{w1n:'ac'},dur2:1300}); await S.wait(1000);
+  lineCfg(S,2);
+  await S.show('w2',fourT(d,T),{from:{w2a:'w1d',w2b:'w1d',w2t:'w1t',w2u:'w1t'},dur2:1300}); await S.wait(1000);
+  // one number with one ten, twice
+  lineCfg(S,3);
+  await S.show('w3',row(opr('=','w3q'),pairT('w3',d,T),opr('·','w3m'),pairT('w3b',d,T)),{from:{w3a:'w2a',w3t:'w2t',w3ba:'w2b',w3bt:'w2u'},curve:{w3t:{y:-26},w3ba:{y:26}},dur2:1400}); await S.wait(1000);
+  lineCfg(S,4);
+  await S.show('w4',row(opr('=','w4q'),num(A,'w4a','cA'),opr('·','w4m'),num(A,'w4b','cA')),{from:{w4a:'w3a',w4b:'w3ba'},dur2:1200}); await S.wait(1000);
+  // the two equal factors are the sides
+  sideCfg(S,num(A));
+  await S.all(S.show('sb',num(A,'sb','cA'),{from:{sb:'w4a'},dur2:1400}),S.show('sl',num(A,'sl','cA'),{from:{sl:'w4b'},dur2:1400})); await S.wait(900);
+  await S.show('main',row(P,opr('=','q'),num(A,'res','cA')),{from:{res:'sb'},dur2:1300}); await S.wait(300);
+  await S.glow('res');
+}
+
+const startGen=()=>V('A','gA','cO');
+async function runGen(S){
+  // the area written as a product inside the square; the sides play no part
+  const cx=SQ.x+SQ.w/2, AX=row(V('A','gA','cO'),opr('=','gq'),V('x','gx','cA'),opr('·','gm'),V('y','gy','cB'));
+  await S.begin(startGen(),{cx:cx-W(AX,28)/2,y:SQ.y+SQ.w/2+.32*28,s:28,al:'l'});
+  const sq=box(S,SQ.x,SQ.y,SQ.w,SQ.w,'area'); await growIn(S,sq,1000); await S.wait(400);
+  await S.show('main',AX,{fade:900}); await S.wait(1100);
+  // the root of both sides
+  const xy=P=>row(V('x',P+'x','cA'),opr('·',P+'m'),V('y',P+'y','cB'));
+  const RA=rt(V('A','lA','cO'),'lr0');
+  S.cfg('l',{cx:L3-W(RA,30),y:120,s:30,al:'l'});
+  await S.show('l',row(RA,opr('=','lq'),rt(xy('l'),'lr1')),{from:{lA:'gA',lq:'gq',lx:'gx',lm:'gm',ly:'gy'},dur2:1300}); await S.wait(1200);
+  // √A goes
+  await S.show('l',rt(xy('l'),'lr1'),{dur:1200}); await S.wait(600);
+  // the root of the area is the side
+  S.cfg('sb',{cx,y:SQ.y+SQ.w+36,s:26});
+  await S.show('sb',rt(xy('s'),'sr'),{from:{sx:'lx',sm:'lm',sy:'ly',sr:'lr1'},dur2:1400}); await S.wait(1000);
+  // the root of a product splits into two roots
+  const two=P=>row(rt(V('x',P+'x2','cA'),P+'r2'),opr('·',P+'m2'),rt(V('y',P+'y2','cB'),P+'r3'));
+  await S.show('l',row(rt(xy('l'),'lr1'),opr('=','lq2'),two('l')),{from:{lx2:'lx',ly2:'ly'},dur2:1300}); await S.wait(1300);
+  // turned around, and the side splits in the same moment
+  const up={y:-46}, dw={y:46}, cv={lr2:up,lx2:up,lm2:up,lr3:up,ly2:up,lr1:dw,lx:dw,lm:dw,ly:dw};
+  await S.all(S.show('l',row(two('l'),opr('=','lq2'),rt(xy('l'),'lr1')),{dur:1700,curve:cv}),
+              S.show('sb',row(rt(V('x','sx','cA'),'sr2'),opr('·','sm'),rt(V('y','sy','cB'),'sr3')),{dur:1700,sync:true}));
+  await S.wait(600);
+  await restrict(S,{cx:L3+80,y:214,s:24},row(geq('x',1),cellN(36),geq('y',2)));
+}
+
+/* ───────── 4 · the root of a product ───────── */
+const L4=[84,184,284];
+const startPM=E=>row(rt(num(E.a,'a','cA'),'r1'),opr('·','m'),rt(num(E.b,'b','cB'),'r2'));
+async function runPM(S,E){
+  const {a,b}=E, P=startPM(E);
+  await S.begin(P,{cx:LX-W(P,30),y:L4[0],s:30,al:'l'});
+  // two roots multiplied are the root of the product
+  await S.show('main',row(P,opr('=','q'),rt(row(num(a,'ga','cA'),opr('·','gm'),num(b,'gb','cB')),'gr')),{from:{ga:'a',gb:'b'},dur2:1300}); await S.wait(1100);
+  S.cfg('w',{cx:LX,y:L4[1],s:30,al:'l'});
+  await S.show('w',row(opr('=','wq'),rt(num(a*b,'wn'),'wr')),{from:{wr:'gr'},dur2:1300}); await S.wait(1000);
+  await S.show('w',row(opr('=','wq'),rt(num(a*b,'wn'),'wr'),opr('=','wq2'),num(Math.sqrt(a*b),'wv')),{fade:850}); await S.wait(300);
+  await S.glow('wv');
+}
+const startP2=E=>rt(num(E.a*E.b,'a'),'r');
+async function runP2(S,E){
+  const {a,b}=E, ra=Math.sqrt(a), rb=Math.sqrt(b), P=startP2(E);
+  await S.begin(P,{cx:LX-W(P,30),y:L4[0],s:30,al:'l'});
+  await S.show('main',row(P,opr('=','q'),rt(row(num(a,'ga','cA'),opr('·','gm'),num(b,'gb','cB')),'gr')),{from:{ga:'a',gb:'a'},dur2:1300}); await S.wait(1100);
+  S.cfg('w',{cx:LX,y:L4[1],s:30,al:'l'});
+  await S.show('w',row(opr('=','wq'),rt(num(a,'qa','cA'),'qr1'),opr('·','qm'),rt(num(b,'qb','cB'),'qr2')),{from:{qa:'ga',qb:'gb'},dur2:1300}); await S.wait(1100);
+  S.cfg('v',{cx:LX,y:L4[2],s:30,al:'l'});
+  const v1=row(opr('=','vq'),num(ra,'va','cA'),opr('·','vm'),num(rb,'vb','cB'));
+  await S.show('v',v1,{from:{va:'qa',vb:'qb'},dur2:1300}); await S.wait(900);
+  await S.show('v',row(v1,opr('=','vq2'),num(ra*rb,'vr')),{fade:850}); await S.wait(300);
+  await S.glow('vr');
+}
+/* ───────── 5 · the root of a unit fraction, then of any fraction ───────── */
+/* the root of 1 over a number: find the fraction that times itself gives it */
+const invD=(E,k)=>E.g?V('x',k):num(E.d*E.d,k);
+const invR=(E,k)=>E.g?rt(V('x',k),k+'r'):num(E.d,k);
+const startInv=E=>rt(frc(num(1,'n1'),invD(E,'d1'),'f'),'r');
+async function runInv(S,E){
+  const P=startInv(E), F=p=>frc(num(1,p+'1'),invR(E,p+'5'),p), rr=k=>E.g?{[k+'r']:'a5r'}:{};
+  await S.begin(P,{cx:LX-W(P,30),y:L4[0],s:30,al:'l'});
+  const a=row(F('a'),opr('·','am'),F('b'));
+  S.cfg('w',{cx:LX-W(a,30),y:L4[1]+12,s:30,al:'l'});
+  await S.show('w',a,{from:{a1:'n1',b1:'n1',a5:'d1',b5:'d1'},dur2:1300}); await S.wait(1000);
+  const b=row(a,opr('=','q1'),frc(row(num(1,'c1'),opr('·','cm'),num(1,'c2')),row(invR(E,'c3'),opr('·','cn'),invR(E,'c4')),'c'));
+  await S.show('w',b,{from:{c1:'a1',c2:'b1',c3:'a5',c4:'b5',...(E.g?{c3r:'a5r',c4r:'b5r'}:{})},dur2:1300}); await S.wait(1000);
+  const c=row(b,opr('=','q2'),frc(num(1,'r1'),invD(E,'r2'),'rr'));
+  await S.show('w',c,{from:{r1:'c1',r2:'c3'},dur2:1300}); await S.wait(800);
+  // the same fraction as under the root
+  await S.all(S.wiggle(['n1','d1','f.bar']),S.wiggle(['r1','r2','rr.bar'])); await S.wait(600);
+  await S.show('main',row(P,opr('=','q'),F('m')),{from:{m1:'a1',m5:'a5','m.bar':'a.bar',...rr('m5')},dur2:1300}); await S.wait(300);
+  if(E.g) await restrict(S,{cx:LX+80,y:L4[2]+30,s:24},geq('x',1,'>'));
+  else await S.wiggle(['m1','m5','m.bar'],2000);
+}
+
+
+const L5=[86,196,300];
+const qA=(E,k)=>E.g?V('x',k,'cA'):num(E.a,k,'cA');
+const qB=(E,k)=>E.g?V('y',k,'cB'):num(E.b,k,'cB');
+const startQuot=E=>rt(frc(qA(E,'a'),qB(E,'b'),'f'),'r');
+async function runQuot(S,E){
+  const P=startQuot(E);
+  await S.begin(P,{cx:LX-W(P,30),y:L5[0],s:30,al:'l'});
+  // over a number is times 1 over it
+  await S.show('main',row(P,opr('=','q'),rt(row(qA(E,'ga'),opr('·','gm'),frc(num(1,'g1'),qB(E,'gb'),'gf')),'gr')),{from:{ga:'a',gb:'b'},dur2:1300}); await S.wait(1200);
+  // the root of a product is the product of the roots
+  S.cfg('w',{cx:LX,y:L5[1],s:30,al:'l'});
+  await S.show('w',row(opr('=','wq'),rt(qA(E,'wa'),'wr1'),opr('·','wm'),rt(frc(num(1,'w1'),qB(E,'wb'),'wf'),'wr2')),{from:{wa:'ga',w1:'g1',wb:'gb','wf.bar':'gf.bar'},dur2:1300}); await S.wait(1200);
+  // the root of 1 over a number is 1 over its root
+  await S.show('w',row(opr('=','wq'),rt(qA(E,'wa'),'wr1'),opr('·','wm'),frc(num(1,'w1'),rt(qB(E,'wb'),'wr2'),'wf')),{dur:1300}); await S.wait(1200);
+  // times 1 over: the first root goes over the bar
+  await S.show('w',row(opr('=','wq'),frc(rt(qA(E,'wa'),'wr1'),rt(qB(E,'wb'),'wr2'),'wf')),{dur:1500}); await S.wait(1000);
+  if(E.g) return restrict(S,{cx:LX+90,y:L5[2]-10,s:24},row(geq('x',1),cellN(36),geq('y',2,'>')));
+  S.cfg('v',{cx:LX,y:L5[2],s:30,al:'l'});
+  await S.show('v',row(opr('=','vq'),frc(num(Math.sqrt(E.a),'va','cA'),num(Math.sqrt(E.b),'vb','cB'),'vf')),{from:{va:'wa',vb:'wb','vf.bar':'wf.bar'},dur2:1300}); await S.wait(300);
+  await S.wiggle(['va','vb','vf.bar'],2000);
+}
+
+/* ───────── 6 · the root is the power one half ───────── */
+let HF='f'; try{ HF=localStorage.getItem('wl-half')||'f'; }catch(e){}
+if(HF!=='f'&&HF!=='d') HF='f';
+const half=(k,cls='cF')=>HF==='f'?frc(num(1,k+'n',cls),num(2,k+'d',cls),k,cls):row(num(0,k+'0',cls),dmk(k+'p',cls),num(5,k+'5',cls));
+const halfFrom=(d,s)=>HF==='f'?{[d+'n']:s+'n',[d+'d']:s+'d',[d+'.bar']:s+'.bar'}:{[d+'0']:s+'0',[d+'p']:s+'p',[d+'5']:s+'5'};
+const L6=[84,186,272];
+const hB=(E,k)=>E.g?V('x',k,'cA'):num(E.a,k,'cA');
+const startHalf=E=>pw(hB(E,'a'),half('e'));
+async function runHalf(S,E){
+  const P=startHalf(E), L=row(pw(hB(E,'xa'),half('xe')),opr('·','xm'),pw(hB(E,'ya'),half('ye')));
+  await S.begin(P,{cx:LX-W(P,30),y:L6[0],s:30,al:'l'});
+  // the half power times itself: the exponents add up to 1
+  S.cfg('w',{cx:LX-W(L,30),y:L6[1],s:30,al:'l'});
+  await S.show('w',L,{from:{xa:'a',ya:'a',...halfFrom('xe','e'),...halfFrom('ye','e')},dur2:1300}); await S.wait(1000);
+  const L2=row(L,opr('=','q1'),pw(hB(E,'za'),row(half('z1'),opr('+','zp','cF'),half('z2'))));
+  await S.show('w',L2,{from:{za:'xa',...halfFrom('z1','xe'),...halfFrom('z2','ye')},dur2:1300}); await S.wait(1000);
+  const L3=row(L2,opr('=','q2'),pw(hB(E,'ua'),num(1,'ue','cF')));
+  await S.show('w',L3,{from:{ua:'za'},dur2:1100}); await S.wait(900);
+  await S.show('w',row(L3,opr('=','q3'),hB(E,'v')),{from:{v:'ua'},dur2:1100}); await S.wait(1000);
+  // the root times itself gives the same
+  const K=row(rt(hB(E,'ka'),'kr1'),opr('·','km'),rt(hB(E,'kb'),'kr2'));
+  S.cfg('k',{cx:LX-W(K,30),y:L6[2],s:30,al:'l'});
+  await S.show('k',row(K,opr('=','kq'),hB(E,'kv')),{from:{ka:'a',kb:'a'},dur2:1300}); await S.wait(800);
+  await S.all(S.wiggle(['v'],2000),S.wiggle(['kv'],2000)); await S.wait(500);
+  // so the half power is the root
+  await S.show('main',row(P,opr('=','q'),rt(hB(E,'ma'),'mr')),{from:{ma:'ka',mr:'kr1'},dur2:1300}); await S.wait(800);
+  if(E.g) return restrict(S,{cx:LX+60,y:L6[2]+66,s:24},geq('x',1));
+  await S.show('main',row(P,opr('=','q'),rt(hB(E,'ma'),'mr'),opr('=','q9'),num(Math.sqrt(E.a),'res')),{fade:900}); await S.wait(300);
+  await S.glow('res');
+}
+
+const KIND={
+  sq:{start:startSq,btn:E=>num(E.n,'b','cA'),run:runSq},
+  bet:{start:startBet,run:runBet},
+  up:{start:startUp,run:runUp},
+  down:{start:startDown,run:runDown},
+  gen:{start:startGen,btn:()=>rt(V('A','gA','cO'),'r'),run:runGen},
+  pm:{start:startPM,run:runPM},
+  p2:{start:startP2,run:runP2},
+  inv:{start:startInv,run:runInv},
+  quot:{start:startQuot,run:runQuot},
+  half:{start:startHalf,run:runHalf},
+};
+const SECTIONS={
+  sq:[...Array(10)].map((_,i)=>['sq',{n:i+1}]),
+  bet:[['bet',{N:20,d:0}],['bet',{N:10,d:1}],['bet',{N:30,d:2}],['bet',{N:2,d:3}]],
+  ten:[['up',{d:2,z:1}],['up',{d:8,z:1}],['up',{d:3,z:2}],['down',{d:5,z:1}],['down',{d:7,z:1}],['gen',{}]],
+  prod:[['pm',{a:18,b:2}],['p2',{a:9,b:100}],['pm',{a:27,b:3}],['pm',{a:2,b:50}],['p2',{a:25,b:10000}]],
+  quot:[['inv',{d:5}],['inv',{d:8}],['inv',{g:true}],['quot',{a:9,b:49}],['quot',{a:16,b:81}],['quot',{g:true}]],
+  half:[['half',{a:9}],['half',{a:49}],['half',{a:100}],['half',{g:true}]],
+};
+/* ───────── static pictures ───────── */
+function svgStack(trees,s,gap=4,pad=6){
+  const Ls=trees.map(t=>lay(t,s)), w=Math.max(...Ls.map(L=>L.w))+2*pad; let y=pad; const pos=[];
+  Ls.forEach(L=>{ y+=L.asc; pos.push(y); y+=L.desc+gap; });
+  const h=y-gap+pad, svg=el('svg',{viewBox:`0 0 ${w} ${h}`,width:w,height:h,class:'ic','aria-hidden':'true'});
+  Ls.forEach((L,i)=>{ const x0=(w-L.w)/2; L.leaves.forEach(l=>mkLeaf(svg,shift(l,x0,pos[i]))); });
+  return {svg,w,h};
+}
+const svgOf=(tree,s,pad)=>svgStack([tree],s,4,pad).svg;
+function say(n){
+  if(n.t==='n'||n.t==='o') return n.text;
+  if(n.t==='d') return DM;
+  if(n.t==='R') return '√('+say(n.c)+')';
+  if(n.t==='r') return n.ch.map(say).join('').replace(/([·/=+−])/g,' $1 ').replace(/\s+/g,' ').trim();
+  if(n.t==='p') return say(n.b)+'^'+(n.e.t!=='n'?'('+say(n.e)+')':say(n.e));
+  if(n.t==='f') return '('+say(n.nu)+') / ('+say(n.de)+')';
+  if(n.t==='P') return '('+say(n.c)+')';
+  return '';
+}
+// the legend: a square of 3 by 3 cells, its side and its area
+function legend(){
+  const c=20, x0=36, y0=6, n=3, eq=lay(row(num(3,null,'cA'),opr('·'),num(3,null,'cA'),opr('='),num(9,null,'cO')),26);
+  const w=x0+n*c+34+eq.w+6, h=y0+n*c+30, svg=el('svg',{viewBox:`0 0 ${w} ${h}`,width:w,height:h,class:'ic','aria-hidden':'true'});
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++) el('rect',{x:x0+i*c,y:y0+j*c,width:c,height:c,class:'cell'},svg);
+  mkLeaf(svg,{kind:'t',text:'3',cls:'cA',x:x0+n*c/2,y:y0+n*c+23,s:20});
+  mkLeaf(svg,{kind:'t',text:'3',cls:'cA',x:x0-14,y:y0+n*c/2+7,s:20});
+  eq.leaves.forEach(l=>mkLeaf(svg,shift(l,x0+n*c+34,y0+n*c/2+9)));
+  return svg;
+}
+function statics(){
+  const x=()=>V('x',null,'cA'), y=()=>V('y',null,'cB'), two=()=>num(2,null,'cF');
+  document.getElementById('ops').replaceChildren(svgOf(row(pw(x(),two()),cellN(56),rt(x())),64,2));
+  document.getElementById('legend').replaceChildren(legend());
+  // the decimal mark: point or comma
+  const sw=document.getElementById('dmsw'); sw.replaceChildren();
+  [',','.'].forEach(c=>{ const bt=document.createElement('button'); bt.type='button'; bt.setAttribute('aria-label','0'+c+'5'); bt.setAttribute('aria-pressed',DM===c);
+    bt.className=DM===c?'on':''; const sv=DM; DM=c; bt.appendChild(svgOf(row(num(0),dmk(),num(5)),18)); DM=sv;
+    bt.addEventListener('click',()=>setDM(c)); sw.appendChild(bt); });
+  const G={sq:rt(pw(x(),two())),bet:rt(num(2)),ten:pw(num(10,null,'cF'),two()),
+    prod:rt(row(x(),opr('·'),y())),quot:rt(frc(x(),y())),half:pw(x(),half(''))};
+  document.querySelectorAll('.sec').forEach(sec=>{
+    const sv=svgOf(sec.dataset.sum?opr('='):G[sec.dataset.sec],44,2);   /* one size for every symbol */
+    sec.querySelector('.glyph').replaceChildren(sv); });
+  const S24=t=>svgOf(t,24), red=t=>svgOf(t,15);
+  const cR=(v,op='≥')=>row(V(v,null,'cR'),opr(op,null,'cR'),num(0,null,'cR'));
+  const pair=(t,...rs)=>{ const p=document.createElement('span'); p.className='rpair'; p.append(S24(t),red(row(rs.flatMap((r,i)=>i?[cellN(12),r]:[r])))); return p; };
+  // a rule with its conditions written underneath
+  const under=(t,...rs)=>{ const p=document.createElement('span'); p.className='rcol'; p.append(S24(t),red(row(rs.flatMap((r,i)=>i?[cellN(12),r]:[r])))); return p; };
+  const R=[
+    [pair(row(rt(x()),opr('·'),rt(x()),opr('='),x()),cR('x'))],
+    [pair(row(pw(par(rt(x())),two()),opr('='),x()),cR('x')), pair(row(rt(pw(x(),two())),opr('='),x()),cR('x'))],
+    [under(row(rt(x()),opr('·'),rt(y()),opr('='),rt(row(x(),opr('·'),y()))),cR('x'),cR('y')),
+     under(row(rt(frc(x(),y())),opr('='),frc(rt(x()),rt(y()))),cR('x'),cR('y','>'))],
+    [pair(row(pw(x(),half('')),opr('='),rt(x())),cR('x'))],
+  ];
+  const box=document.getElementById('rules'); box.replaceChildren();
+  R.forEach(items=>{ const d=document.createElement('div'); d.className='rrow'; d.append(...items); box.appendChild(d); });
+}
+
+/* ───────── wiring ───────── */
+let last=null, active=null; const stages=[];
+// while an animation plays, the rest of the page steps back
+let releaseT=null;
+let dropT=null;
+function setFocus(sec){
+  clearTimeout(releaseT); clearTimeout(dropT);
+  const prev=active; active=sec;
+  if(sec){ document.querySelectorAll('.sec.active').forEach(x=>{ if(x!==sec) x.classList.remove('active'); }); sec.classList.add('active'); }
+  // the stage that just played stays on top of the dimmer until the dimmer has faded away
+  else if(prev) dropT=setTimeout(()=>prev.classList.remove('active'),2100);
+  document.body.classList.toggle('focusing',!!sec);
+}
+// a new decimal mark: everything with decimals is redrawn
+function setDM(c){
+  if(c===DM) return; DM=c; try{ localStorage.setItem('wl-decimal-mark',c); }catch(e){}
+  statics(); drawForms(); stages.forEach(q=>q.reset()); setFocus(null);
+}
+// the half power as a fraction or as a decimal
+function setForm(f){
+  if(f===HF) return; HF=f; try{ localStorage.setItem('wl-half',f); }catch(e){}
+  statics(); drawForms(); stages.forEach(q=>{ if(q.key==='half') q.reset(); }); if(active&&active.dataset.sec==='half') setFocus(null);
+}
+function drawForms(){
+  const box=document.getElementById('hsw'); if(!box) return; box.replaceChildren();
+  ['f','d'].forEach(f=>{ const on=HF===f, bt=document.createElement('button'); bt.type='button';
+    bt.className=on?'on':''; bt.setAttribute('aria-pressed',on); bt.setAttribute('aria-label',f==='f'?'1/2':'0'+DM+'5');
+    const sh=HF; HF=f; bt.appendChild(svgOf(half('x'),f==='f'?17:20)); HF=sh;
+    bt.addEventListener('click',()=>setForm(f)); box.appendChild(bt); });
+}
+// space bar pauses / resumes the animation that was started last
+document.addEventListener('keydown',e=>{
+  if(e.code!=='Space'||!last||e.target.closest('button,input,textarea')) return;
+  e.preventDefault(); last.paused?last.resume():last.pause(); stages.forEach(q=>q.ppShow());
+});
+statics(); drawForms();
+document.querySelectorAll('[data-sec]').forEach(sec=>{
+  const key=sec.dataset.sec, list=SECTIONS[key], st=new Stage(sec.querySelector('svg.stage'));
+  const exBar=sec.querySelector('.exs'), rep=sec.querySelector('.replay');
+  let cur=null;
+  const pp=document.createElement('button'); pp.type='button'; pp.className='replay pp'; rep.before(pp);
+  const ICO_PAUSE='<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><rect x="2" y="2" width="5" height="16" rx="1.5" fill="currentColor"/><rect x="11" y="2" width="5" height="16" rx="1.5" fill="currentColor"/></svg>';
+  const ICO_PLAY='<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><path d="M3 2.5 L16 10 L3 17.5 Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  const ppShow=()=>{ pp.innerHTML=st.paused?ICO_PLAY:ICO_PAUSE; pp.setAttribute('aria-label',st.paused?'▶':'❚❚'); pp.setAttribute('aria-pressed',st.paused); };
+  pp.addEventListener('click',()=>{ st.paused?st.resume():st.pause(); ppShow(); last=st; });
+  st.onplay=focus=>{ last=st; setTimeout(ppShow); setFocus(focus?sec:(active===sec?null:active)); };
+  st.onend=()=>{ clearTimeout(releaseT); releaseT=setTimeout(()=>{ if(active===sec) setFocus(null); },1300); };
+  const setRep=v=>{ rep.hidden=v; pp.hidden=v; }; setRep(true);
+  const exBtns=[];
+  const mark=i=>exBtns.forEach((b,j)=>{ b.classList.toggle('on',i===j); b.setAttribute('aria-pressed',i===j); });
+  const run=i=>{ const [k,E]=list[i]; return st.play(S=>KIND[k].run(S,E),false,true); };
+  const pic=(k,E)=>(KIND[k].btn||KIND[k].start)(E);
+  const draw=()=>list.forEach(([k,E],i)=>{ const b=exBtns[i]; b.setAttribute('aria-label',say(pic(k,E))); b.replaceChildren(svgOf(pic(k,E),20)); });
+  list.forEach((_,i)=>{
+    const b=document.createElement('button'); b.type='button'; b.id=`ex-${key}-${i}`;
+    b.addEventListener('click',()=>{ cur=i; mark(i); setRep(false); run(i); });
+    exBar.appendChild(b); exBtns.push(b);
+  });
+  draw();
+  rep.addEventListener('click',()=>{ if(cur!==null) run(cur); });
+  // a new form or decimal mark: redraw the buttons and clear the stage
+  const reset=()=>{ st.resume(); st.gen++; st.svg.textContent=''; cur=null; mark(-1); setRep(true); draw(); };
+  stages.push({st,ppShow,reset,key});
+});
+</script>
+
+</html>

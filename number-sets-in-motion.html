@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="zxx">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}.home{align-self:flex-start;margin-bottom:-24px;font:600 14px/1 var(--font);padding:9px 14px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);text-decoration:none;position:relative;transition:opacity 2s,border-color .3s}
+.home:hover{border-color:var(--mute)}
+.home:focus-visible{outline:3px solid var(--cB);outline-offset:2px}
+body.focusing .home{opacity:.4;transition-duration:.9s}
+</style>
+<title>Number Sets in Motion</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Azeret+Mono:ital,wght@0,400;0,600;0,800;1,600;1,800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Math&text=%E2%84%95%E2%84%A4%E2%84%9A%E2%84%9D%F0%9D%95%8E%E2%8A%82%CF%80&display=swap">
+<style>
+/* Layout: the nested sets on top, the chain of tests below them, the working at the bottom. Green = the test being done and a pass, grey = a fail, red = the part that fails the test. */
+:root{
+  --bg:#EEF1F4; --panel:#FFFFFF; --ink:#172031; --mute:#7D879A; --rule:#D3D9E2; --dim:rgba(16,22,34,.16);
+  --cA:#DD5F0B; --cB:#2357D4; --cF:#0E8A5A; --cO:#7A3FD8; --cR:#D42A2A;
+  --font:'Azeret Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --math:'Noto Sans Math','Cambria Math','STIX Two Math','Segoe UI Symbol',serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1015; --panel:#161A21; --ink:#E6E9EF; --mute:#77839A; --rule:#2B323E; --dim:rgba(0,0,0,.45);
+  --cA:#FF8A42; --cB:#6E97FF; --cF:#34C98A; --cO:#B08CFF; --cR:#FF6B6B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1015; --panel:#161A21; --ink:#E6E9EF; --mute:#77839A; --rule:#2B323E; --dim:rgba(0,0,0,.45);
+  --cA:#FF8A42; --cB:#6E97FF; --cF:#34C98A; --cO:#B08CFF; --cR:#FF6B6B; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--font)}
+.wrap{max-width:936px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:36px 72px;display:flex;flex-direction:column;gap:44px}
+.top{display:flex;flex-direction:column;align-items:center;gap:18px}
+.titles{text-align:center}
+.titles h1{font:800 clamp(28px,5.5vw,46px)/1.1 var(--font);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.titles .by{margin:8px 0 0;font-size:15px;color:var(--mute);letter-spacing:.02em}
+.dimmer{position:fixed;inset:0;background:var(--dim);opacity:0;pointer-events:none;transition:opacity 2s;z-index:1}
+body.focusing .dimmer{opacity:1}
+.top,.sec{position:relative;transition:opacity 2s}
+body.focusing .dimmer,body.focusing .top,body.focusing .sec{transition-duration:.9s}
+body.focusing .top,body.focusing .sec:not(.active){opacity:.4}
+.sec.active{z-index:2}
+@media (prefers-reduced-motion: reduce){.dimmer,.top,.sec{transition:none}}
+.ops{display:flex;justify-content:center;max-width:100%}
+.ops svg{max-width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px 40px}
+.sw{display:inline-flex;gap:8px}
+.ask{display:inline-grid;grid-template-columns:auto auto;column-gap:8px;row-gap:5px;justify-items:center}
+.ask::before{content:'?';grid-column:1/-1;font:600 17px/1 var(--font);color:var(--ink)}
+.sw button{font:600 15px/1 var(--font);padding:6px 10px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center}
+.sw button:hover{border-color:var(--mute)}
+.sw button.on{border:2px solid var(--ink)}
+.sec{display:grid;grid-template-columns:152px minmax(0,1fr);gap:16px;align-items:start}
+.glyph{display:flex;justify-content:center;padding-top:14px}
+.glyph svg{height:auto}
+@media (max-width:640px){.sec{grid-template-columns:minmax(0,1fr)}.glyph{justify-content:flex-start;padding-top:0}}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:16px;overflow:hidden;min-width:0}
+svg.stage{display:block;width:100%;height:auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-top:1px solid var(--rule);align-items:center}
+.exs{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-width:0}
+.card button{font:600 15px/1 var(--font);padding:4px 3px;min-width:38px;min-height:40px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.card button:hover{border-color:var(--mute)}
+.card button.on{border:2px solid var(--ink)}
+.bar .replay{font-size:22px;padding:8px 14px;align-self:stretch;min-width:52px}
+.bar .pp{color:var(--ink)}
+.bar .pp[aria-pressed="true"]{border:2px solid var(--cF);color:var(--cF)}
+button:focus-visible{outline:3px solid var(--cB);outline-offset:2px}
+
+svg text{font-family:var(--font);font-weight:600}
+.lf{fill:var(--ink);transition:fill .6s}
+.lf.it{font-style:italic}
+.lf.ds,.lf.pi{font-family:var(--math);font-weight:400}
+.lf.pi{transform-box:fill-box;transform-origin:50% 100%;scale:1.3}
+.lbar{stroke:var(--ink);stroke-linecap:round;transition:stroke .6s}
+.lpath{fill:none;stroke:var(--ink);stroke-linecap:round;stroke-linejoin:round;transition:stroke .6s}
+.lf.cF{fill:var(--cF)} .lf.cR{fill:var(--cR)} .lf.mut{fill:var(--mute)}
+.lbar.cF,.lpath.cF{stroke:var(--cF)}
+/* the sets: nested ovals, each a little deeper than the one around it */
+.ov{fill:var(--ink);fill-opacity:.035;stroke:var(--mute);stroke-width:1.6;transition:stroke .6s,stroke-width .6s}
+.ov.hi{stroke:var(--cF);stroke-width:3.2}
+.slab{font-family:var(--math);font-weight:400;fill:var(--ink)}
+/* the chain of tests */
+.clet{font-family:var(--math);font-weight:400;fill:var(--ink)}
+.car{fill:none;stroke:var(--mute);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .6s}
+.car.act{stroke:var(--cF)}
+.cic .lf{fill:var(--mute)} .cic .lbar{stroke:var(--mute)}
+.cic.act .lf{fill:var(--cF)} .cic.act .lbar{stroke:var(--cF)}
+.ring{fill:none;stroke:var(--cF);stroke-width:2.6}
+.ul{fill:none;stroke:var(--cF);stroke-width:3;stroke-linecap:round}
+.mk{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.mk.ok{stroke:var(--cF)} .mk.no{stroke:var(--mute)}
+.ic{display:block}
+@media (prefers-reduced-motion: reduce){.lf,.lbar,.lpath,.ov,.car{transition:none}}
+</style>
+
+<div class="wrap">
+  <a class="home" href="index.html" lang="sv">← Tillbaks till menyn</a>
+  <div class="dimmer" aria-hidden="true"></div>
+  <header class="top">
+    <div class="titles"><h1>Wordless explanations</h1><p class="by">by Niklas Jonsson Kaino</p></div>
+    <div class="ops" id="ops" aria-hidden="true"></div>
+    <div class="legend"><span id="legend"></span><span class="sw ask" id="dmsw"></span><span class="sw" id="wsw"></span></div>
+  </header>
+  <section class="sec" data-sec="ns"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 690"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay pp" type="button" hidden></button><button class="replay rs" type="button" aria-label="↺" hidden>↺</button></div></div></section>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg', CANCEL=Symbol('cancel');
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CX=360, CW=.62;
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=t=>Math.max(0,Math.min(1,t));
+function el(tag,attrs,parent){ const e=document.createElementNS(NS,tag); if(attrs) for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+
+/* ───────── expression trees ───────── */
+const num=(t,key,cls)=>({t:'n',text:String(t),key,cls:cls||''});
+const opr=(t,key,cls)=>({t:'o',text:t,key,cls:cls||''});
+const cellN=(w,ch)=>({t:'c',w,ch});
+const row=(...ch)=>({t:'r',ch:ch.flat(9).filter(Boolean)});
+function frc(a,b,key,cls){ cls=cls||''; if(typeof a!=='object') a=num(a,key+'n',cls); if(typeof b!=='object') b=num(b,key+'d',cls); return {t:'f',nu:a,de:b,key,cls}; }
+const pw=(b,e)=>({t:'p',b,e});                                 // power: base with a raised exponent
+const brc=(c,lab,dir,key,cls)=>({t:'B',c,lab,dir,key,cls:cls||''}); // under- ('u') or overbrace ('o') with a count
+const par=(c,key)=>({t:'P',c,key});                            // brackets that grow to fit
+const strike=n=>({...n,strike:true});
+// the decimal mark (point or comma) is the viewer's choice
+let DM=','; try{ DM=localStorage.getItem('wl-decimal-mark')||','; }catch(e){}   // the comma unless the viewer has picked the point
+if(DM!=='.'&&DM!==',') DM=',';
+const dmk=(key,cls)=>({t:'d',key,cls:cls||''});   // the decimal mark, narrow so the digits stay close
+const arr=key=>({t:'A',key});
+const rt=(c,key,cls)=>({t:'R',c,key,cls:cls??'cF'});   // a root sign that grows to fit                      // a small arrow
+const isV=x=>typeof x==='string'&&/^[a-z]$/.test(x);
+const V=(t,key,cls)=>num(t,key,((cls||'')+' it').trim());
+const N=(x,key,cls)=>isV(x)?V(x,key,cls):num(x,key,cls);
+const X=(e,key,cls)=>typeof e==='object'?e:N(e,key,cls);
+
+const ks=k=>k!=null?k:undefined;
+function shift(l,dx,dy){ const q={...l};
+  if(q.kind==='p'){ q.x1+=dx; q.x2+=dx; q.y1+=dy; q.y2+=dy; }
+  else { if(q.kind==='b'){ q.x1+=dx; q.x2+=dx; } else q.x+=dx; q.y+=dy; }
+  return q; }
+function lay(node,s){
+  if(node.t==='R'){
+    const C=lay(node.c,s), lw=.62*s, top=-(Math.max(C.asc,.74*s)+.14*s), bot=Math.max(C.desc,.06*s)+.1*s, x2=lw+C.w+.08*s;
+    return {w:x2+.06*s,asc:-top+.06*s,desc:bot,leaves:[...C.leaves.map(l=>shift(l,lw,0)),{key:node.key,kind:'p',shape:'rt',cls:node.cls,x1:.04*s,x2,y1:top,y2:bot,s}]};
+  }
+  if(node.t==='d'){ const w=.36*s; return {w,asc:.74*s,desc:.16*s,leaves:[{key:node.key,kind:'t',text:DM,cls:node.cls,x:w/2,y:0,s}]}; }
+  if(node.t==='A'){ const w=1.1*s, y=-.3*s; return {w,asc:.5*s,desc:0,leaves:[{key:node.key,kind:'p',shape:'ar',cls:'',x1:.15*s,x2:w-.15*s,y1:y,y2:y,s}]}; }
+  if(node.t==='o'&&node.text==='/'){   // division: a large slash
+    const k=1.55, tw=CW*k*s, pad=.1*s, sh=.2*s;
+    return {w:tw+2*pad,asc:.74*k*s-sh,desc:sh+.06*s,leaves:[{key:node.key,kind:'t',text:'/',cls:node.cls,x:pad+tw/2,y:sh,s:k*s}]};
+  }
+  if(node.t==='n'||node.t==='o'){
+    const ell=node.text==='⋯', tw=(ell?1.3:[...node.text].length)*CW*s, pad=node.t==='o'?((node.text==='·'||ell)?.14:.34)*s:0;
+    const leaves=[{key:node.key,kind:'t',text:node.text,cls:node.cls,x:pad+tw/2,y:0,s}];
+    if(node.strike) leaves.push({key:node.key!=null?node.key+'.x':undefined,kind:'p',shape:'x',cls:'',x1:pad-.14*s,x2:pad+tw+.14*s,y1:.12*s,y2:-.84*s,s});
+    return {w:tw+2*pad,asc:.74*s,desc:.06*s,leaves};
+  }
+  if(node.t==='c'){
+    if(!node.ch) return {w:node.w,asc:0,desc:0,leaves:[]};
+    const L=lay(node.ch,s); return {w:node.w,asc:L.asc,desc:L.desc,leaves:L.leaves.map(l=>shift(l,(node.w-L.w)/2,0))};
+  }
+  if(node.t==='r'){
+    let x=0,asc=0,desc=0; const leaves=[];
+    for(const ch of node.ch){ const L=lay(ch,s); for(const l of L.leaves) leaves.push(shift(l,x,0)); x+=L.w; asc=Math.max(asc,L.asc); desc=Math.max(desc,L.desc); }
+    return {w:x,asc,desc,leaves};
+  }
+  if(node.t==='p'){
+    const B=lay(node.b,s), es=.62*s, E=lay(node.e,es), rise=Math.max(.4*s,B.asc-.5*es), gx=.04*s;
+    return {w:B.w+gx+E.w+.05*s,asc:Math.max(B.asc,rise+E.asc),desc:Math.max(B.desc,E.desc-rise),
+      leaves:[...B.leaves,...E.leaves.map(l=>shift(l,B.w+gx,-rise))]};
+  }
+  if(node.t==='B'){
+    const C=lay(node.c,s), ls=Math.max(.62*s,16), Lb=lay(node.lab,ls), w=Math.max(C.w,Lb.w), cx=(w-C.w)/2, lx=(w-Lb.w)/2;
+    const g=.14*s, bh=.3*s, ins=.05*s, leaves=C.leaves.map(l=>shift(l,cx,0)), key=node.key!=null?node.key+'.br':undefined;
+    if(node.dir==='u'){
+      const y1=C.desc+g, y2=y1+bh, yl=y2+.14*s+Lb.asc;
+      leaves.push({key,kind:'p',shape:'br',cls:node.cls,x1:cx+ins,x2:cx+C.w-ins,y1,y2,s});
+      Lb.leaves.forEach(l=>leaves.push(shift(l,lx,yl)));
+      return {w,asc:C.asc,desc:yl+Lb.desc,leaves};
+    }
+    const y1=-C.asc-g, y2=y1-bh, yl=y2-.14*s-Lb.desc;
+    leaves.push({key,kind:'p',shape:'br',cls:node.cls,x1:cx+ins,x2:cx+C.w-ins,y1,y2,s});
+    Lb.leaves.forEach(l=>leaves.push(shift(l,lx,yl)));
+    return {w,asc:-yl+Lb.asc,desc:C.desc,leaves};
+  }
+  if(node.t==='P'){
+    const C=lay(node.c,s), pw_=.36*s, asc=Math.max(C.asc,.74*s)+.1*s, desc=Math.max(C.desc,.06*s)+.16*s, kk=node.key;
+    const leaves=C.leaves.map(l=>shift(l,pw_,0));
+    leaves.push({key:kk!=null?kk+'.pl':undefined,kind:'p',shape:'pl',cls:'',x1:.05*s,x2:pw_-.02*s,y1:-asc,y2:desc,s});
+    leaves.push({key:kk!=null?kk+'.pr':undefined,kind:'p',shape:'pr',cls:'',x1:pw_+C.w+.02*s,x2:2*pw_+C.w-.05*s,y1:-asc,y2:desc,s});
+    return {w:C.w+2*pw_,asc,desc,leaves};
+  }
+  const T=lay(node.nu,s), B=lay(node.de,s), pad=.24*s, gap=(node.gap??.2)*s, ax=.3*s, w=Math.max(T.w,B.w)+2*pad;
+  const yT=-ax-gap-T.desc, yB=-ax+gap+B.asc, leaves=[];
+  for(const l of T.leaves) leaves.push(shift(l,(w-T.w)/2,yT));
+  for(const l of B.leaves) leaves.push(shift(l,(w-B.w)/2,yB));
+  leaves.push({key:node.key!=null?node.key+'.bar':undefined,kind:'b',cls:node.cls,x1:pad*.4,x2:w-pad*.4,y:-ax,s});
+  return {w,asc:-yT+T.asc,desc:yB+B.desc,leaves};
+}
+function pathD(l){
+  const {x1,x2,y1,y2}=l, ym=(y1+y2)/2;
+  if(l.shape==='x') return `M${x1} ${y1}L${x2} ${y2}`;
+  if(l.shape==='rt'){ const s=l.s; return `M${x1} ${y2-.4*s}L${x1+.13*s} ${y2-.48*s}L${x1+.3*s} ${y2}L${x1+.5*s} ${y1}L${x2} ${y1}`; }
+  if(l.shape==='ar'){ const h=.18*l.s; return `M${x1} ${y1}L${x2} ${y1}M${x2-h} ${y1-h}L${x2} ${y1}L${x2-h} ${y1+h}`; }
+  if(l.shape==='pl') return `M${x2} ${y1}Q${2*x1-x2} ${ym} ${x2} ${y2}`;
+  if(l.shape==='pr') return `M${x1} ${y1}Q${2*x2-x1} ${ym} ${x1} ${y2}`;
+  const xm=(x1+x2)/2, q=Math.min(Math.abs(y2-y1)*.9,(x2-x1)/4);
+  return `M${x1} ${y1}Q${x1} ${ym} ${x1+q} ${ym}L${xm-q} ${ym}Q${xm} ${ym} ${xm} ${y2}Q${xm} ${ym} ${xm+q} ${ym}L${x2-q} ${ym}Q${x2} ${ym} ${x2} ${y1}`;
+}
+const klassOf=l=>(l.kind==='t'?'lf ':l.kind==='b'?'lbar ':'lpath ')+l.cls;
+function mkLeaf(parent,l){
+  const e=el(l.kind==='t'?'text':l.kind==='b'?'line':'path',{class:klassOf(l)},parent);
+  if(l.kind==='t'){ e.setAttribute('text-anchor','middle'); e.textContent=l.text; }
+  setLeaf(e,l); return e;
+}
+function setLeaf(e,l){
+  if(l.kind==='t'){ e.setAttribute('x',l.x); e.setAttribute('y',l.y); e.setAttribute('font-size',l.s); }
+  else if(l.kind==='b'){ e.setAttribute('x1',l.x1); e.setAttribute('x2',l.x2); e.setAttribute('y1',l.y); e.setAttribute('y2',l.y); e.setAttribute('stroke-width',Math.max(1.6,l.s*.07)); }
+  else { e.setAttribute('d',pathD(l)); e.setAttribute('stroke-width',Math.max(1.6,l.s*(l.shape==='br'?.06:.075))); }
+}
+function mixLeaf(a,b,t,dx,dy){
+  const q={...b};
+  if(b.kind==='t'){ q.x=lerp(a.x,b.x,t)+(dx||0); q.y=lerp(a.y,b.y,t)+(dy||0); q.s=lerp(a.s,b.s,t); }
+  else if(b.kind==='b'){ q.x1=lerp(a.x1,b.x1,t)+(dx||0); q.x2=lerp(a.x2,b.x2,t)+(dx||0); q.y=lerp(a.y,b.y,t)+(dy||0); }
+  else { q.x1=lerp(a.x1,b.x1,t)+(dx||0); q.x2=lerp(a.x2,b.x2,t)+(dx||0); q.y1=lerp(a.y1,b.y1,t)+(dy||0); q.y2=lerp(a.y2,b.y2,t)+(dy||0); q.s=lerp(a.s,b.s,t); }
+  return q;
+}
+const sameLeaf=(a,b)=>a.kind==='t'?(a.x===b.x&&a.y===b.y&&a.s===b.s):a.kind==='b'?(a.x1===b.x1&&a.x2===b.x2&&a.y===b.y):(a.x1===b.x1&&a.x2===b.x2&&a.y1===b.y1&&a.y2===b.y2);
+const mid=l=>l.kind==='t'?[l.x,l.y-.32*l.s]:l.kind==='b'?[(l.x1+l.x2)/2,l.y]:[(l.x1+l.x2)/2,(l.y1+l.y2)/2];
+
+/* products:  a · a · a  or  a · a · ⋯ · a · a  (ids ending in 'e' are the dots ⋯) */
+const isE=id=>id.endsWith('e');
+const SL=c=>typeof c==='number'?[...Array(c)].map((_,i)=>String(i)):['0','1','e','3','4'];
+function prod(P,ids,fac,sep){ const out=[]; ids.forEach((id,i)=>{ if(i) out.push(sep?sep(ids[i-1]):opr('·',P+'m'+ids[i-1])); out.push(isE(id)?opr('⋯',P+id):fac(id)); }); return row(out); }
+const W=(node,s)=>lay(node,s).w;
+const ph=(node,s)=>cellN(W(node,s));
+const cps=(P,ids,src)=>Object.fromEntries(ids.filter(i=>!isE(i)).map(i=>[P+i,src]));
+// numerator and denominator padded on the left to one width, so matching factors stand straight above each other at the right
+const G=f=>({...f,gap:.42});   // roomier fraction for long rows of factors
+function fracL(T,B,key,s){ const a=W(T,s), b=W(B,s); return G(frc(row(a<b?cellN(b-a):null,T),row(b<a?cellN(a-b):null,B),key)); }
+
+/* ───────── stage + animation context ───────── */
+class Stage{
+  constructor(svg){ this.svg=svg; this.gen=0; this.introDone=false; this.acc=0; this.pausedAt=null; }
+  now(){ return (this.pausedAt??performance.now())-this.acc; }
+  pause(){ if(this.pausedAt==null) this.pausedAt=performance.now(); }
+  resume(){ if(this.pausedAt!=null){ this.acc+=performance.now()-this.pausedAt; this.pausedAt=null; } }
+  get paused(){ return this.pausedAt!=null; }
+  play(script,keep,focus){
+    this.resume(); this.onplay&&this.onplay(!!focus);
+    const gen=++this.gen; if(!keep) this.introDone=false; this.instant=false; this.svg.textContent='';
+    this.L={}; for(const k of ['marks','eq','fx']) this.L[k]=el('g',{},this.svg);
+    return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
+      .finally(()=>{ if(this.gen===gen&&focus&&this.onend) this.onend(); });
+  }
+}
+class Ctx{
+  constructor(st,gen){ this.st=st; this.gen=gen; this.cur=new Map(); this.lines={}; }
+  /* everything runs on the stage clock, which stands still while paused */
+  run(d,fn,raw){
+    const st=this.st, gen=this.gen;
+    return new Promise((res,rej)=>{
+      if(st.gen!==gen) return rej(CANCEL);
+      if(d<=0){ fn&&fn(1); return res(); }
+      const t0=st.now();
+      const step=()=>{ if(st.gen!==gen) return rej(CANCEL); const t=Math.min(1,(st.now()-t0)/d); fn&&fn(raw?t:ease(t)); t<1?requestAnimationFrame(step):res(); };
+      requestAnimationFrame(step);
+    });
+  }
+  tw(dur,fn,raw){ return this.run((this.st.instant||RM)?0:dur,fn,raw); }
+  wait(ms){ return this.run(this.st.instant?0:ms,null); }
+  /* swell up, give a small playful wiggle, then settle back */
+  wiggle(keys,dur=1400){
+    const items=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!items.length) return Promise.resolve();
+    const ps=items.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), ys=ps.map(p=>p[1]);
+    const cx=(Math.min(...xs)+Math.max(...xs))/2, cy=(Math.min(...ys)+Math.max(...ys))/2;
+    return this.tw(dur,t=>{
+      const k=1+.09*Math.sin(Math.PI*t), a=4*Math.sin(4*Math.PI*t)*Math.sin(Math.PI*t);
+      items.forEach(c=>c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) rotate(${a}) scale(${k}) translate(${-cx} ${-cy})`));
+    });
+  }
+  /* grow briefly and glow a little, then settle back */
+  glow(key,dur=1000){
+    const c=this.cur.get(key); if(!c) return Promise.resolve(); const [cx,cy]=mid(c.spec);
+    return this.tw(dur,t=>{ const p=Math.sin(Math.PI*t), k=1+.6*p;
+      c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`);
+      c.el.style.filter=t>=1?'':`drop-shadow(0 0 ${6*p}px var(--cF))`; });
+  }
+  all(...ps){ return Promise.all(ps); }
+  /* a small green 10 jumps in an arc from one place to another */
+  flyTen(from,to,s,dur=1300){
+    const e=mkLeaf(this.st.L.fx,{kind:'t',text:'10',cls:'cF',x:from[0],y:from[1],s:.5*s}), h=Math.max(.9*s,Math.abs(to[0]-from[0])*.3);
+    e.setAttribute('opacity',0);
+    return this.tw(dur,t=>{ const x=lerp(from[0],to[0],t), y=lerp(from[1],to[1],t)-h*Math.sin(Math.PI*t);
+      e.setAttribute('x',x); e.setAttribute('y',y+.16*s); e.setAttribute('opacity',Math.min(clamp(t/.2),1-clamp((t-.75)/.25)));
+      if(t>=1) e.remove(); });
+  }
+  /* a part that breaks a rule pulses gently between ink and red, then settles back */
+  pulseRed(keys,dur=2600){
+    const cs=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!cs.length) return Promise.resolve();
+    const ps=cs.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), cx=(Math.min(...xs)+Math.max(...xs))/2, cy=ps[0][1];
+    return this.tw(dur,t=>{ const p=Math.sin(Math.PI*((t*2)%1)), k=1+.12*p;
+      cs.forEach(c=>{ c.el.style.fill=t>=1?'':`color-mix(in srgb, var(--cR) ${Math.round(p*100)}%, var(--ink))`;
+        c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`); }); },true);
+  }
+  dimK(keys,on){ keys.forEach(k=>{ const c=this.cur.get(k); if(c) c.el.classList.toggle('dim',on); }); }
+  cfg(line,c){ this.lines[line]=c; }
+
+  async begin(tree,c){
+    const def={cx:CX,y:92,s:34}, intro=this.st.introDone; this.st.introDone=false;
+    if(intro){
+      this.cfg('main',def); const sv=this.st.instant; this.st.instant=true; await this.show('main',tree); this.st.instant=sv;
+      if(c){ this.cfg('main',c); await this.show('main',tree,{dur:1200}); }
+      await this.wait(500);
+    } else { this.cfg('main',c||def); await this.show('main',tree); await this.wait(900); }
+  }
+
+  /* morph one line of math into a new tree: shared keys glide, changed numbers crossfade, copies grow out of their originals, new parts fade in last */
+  async show(line,tree,op={}){
+    const cfg=this.lines[line]||(this.lines[line]={cx:CX,y:92,s:34});
+    const Lt=lay(tree,cfg.s), x0=cfg.al==='l'?cfg.cx:cfg.cx-Lt.w/2;   // al:'l' keeps the left edge still
+    const next=new Map(); for(const l of Lt.leaves) if(l.key!=null) next.set(l.key,shift(l,x0,cfg.y));
+    const P=this.st.L.eq, A=[], C=[], fins=[], drop=[], copies=[];
+    const cv=k=>{ const v=op.curve&&op.curve[k]; return typeof v==='number'?[v,0]:v?[v.x||0,v.y||0]:[0,0]; };
+    const klass=(spec,dim)=>klassOf(spec)+(dim?' dim':'');
+    for(const [k,spec] of next){
+      const c=this.cur.get(k);
+      if(c){
+        const from=c.spec, dim=c.el.classList.contains('dim'), [rx,ry]=cv(k);
+        if(spec.kind==='t'&&spec.text!==from.text){
+          const oe=c.el, ne=mkLeaf(P,{...from,text:spec.text}); ne.setAttribute('class',klass(spec,dim)); ne.setAttribute('opacity',0);
+          A.push(t=>{ const m=mixLeaf(from,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t)); setLeaf(oe,m); setLeaf(ne,m); oe.setAttribute('opacity',1-t); ne.setAttribute('opacity',t); });
+          drop.push(oe); c.el=ne;
+        } else {
+          c.el.setAttribute('class',klass(spec,dim));
+          if(!sameLeaf(from,spec)){ const e=c.el; A.push(t=>setLeaf(e,mixLeaf(from,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t)))); }
+        }
+        c.spec=spec; c.line=line;
+      } else {
+        const sk=op.from&&op.from[k];
+        if(sk) copies.push([k,spec,sk]);
+        else { const e=mkLeaf(P,spec); e.setAttribute('opacity',0); fins.push({e,spec}); this.cur.set(k,{el:e,spec,line}); }
+      }
+    }
+    const gone=[], goneSpec=new Map();
+    for(const [k,c] of this.cur) if(c.line===line&&!next.has(k)){ const o=c.el.getAttribute('opacity'); gone.push([c.el,o==null?1:+o]); goneSpec.set(k,c.spec); this.cur.delete(k); }
+    // 1: the originals settle into their new places
+    // sync: new parts fade in while the others move, instead of after
+    if(A.length||gone.length) await this.tw(op.dur??1000,t=>{ A.forEach(fn=>fn(t)); gone.forEach(([e,o])=>e.setAttribute('opacity',o*(1-t))); if(op.sync) fins.forEach(({e})=>e.setAttribute('opacity',t)); });
+    if(op.sync&&(A.length||gone.length)) fins.length=0;
+    gone.forEach(([e])=>e.remove()); drop.forEach(e=>e.remove());
+    // 2: copies grow out of the settled originals
+    for(const [k,spec,sk] of copies){
+      const src=(this.cur.get(sk)||{}).spec||goneSpec.get(sk);
+      if(!src||src.kind!==spec.kind){ const e=mkLeaf(P,spec); e.setAttribute('opacity',0); fins.push({e,spec}); this.cur.set(k,{el:e,spec,line}); continue; }
+      const start=spec.kind==='t'?{...spec,x:src.x,y:src.y,s:src.s}:spec.kind==='b'?{...spec,x1:src.x1,x2:src.x2,y:src.y}:{...spec,x1:src.x1,x2:src.x2,y1:src.y1,y2:src.y2};
+      const e=mkLeaf(P,start), [rx,ry]=cv(k); e.setAttribute('opacity',0);
+      C.push(t=>{ setLeaf(e,mixLeaf(start,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t))); e.setAttribute('opacity',Math.min(1,t*1.5)); });
+      this.cur.set(k,{el:e,spec,line});
+    }
+    const side=op.during?op.during():null;
+    if(C.length) await this.tw(op.dur2??op.dur??1100,t=>C.forEach(fn=>fn(t)));
+    // 3: brand-new parts fade in; a brace grows out from its middle, a strike is drawn
+    fins.forEach(({e,spec})=>{ if(spec.shape==='x'||spec.shape==='rt'){ e.setAttribute('pathLength',1); e.setAttribute('stroke-dasharray','1 2'); e.setAttribute('stroke-dashoffset',1); } });
+    if(fins.length) await this.tw(op.fade??850,t=>fins.forEach(({e,spec})=>{
+      if(spec.shape==='x'||spec.shape==='rt'){ e.setAttribute('opacity',t>0?1:0); e.setAttribute('stroke-dashoffset',1-t); }
+      else if(spec.shape==='br'){ const xm=(spec.x1+spec.x2)/2; setLeaf(e,{...spec,x1:lerp(xm,spec.x1,t),x2:lerp(xm,spec.x2,t)}); e.setAttribute('opacity',Math.min(1,t*2)); }
+      else e.setAttribute('opacity',t); }));
+    if(side) await side;
+  }
+  focus(keys){ const set=keys?new Set(keys):null; for(const [k,c] of this.cur) c.el.classList.toggle('dim',!!set&&!set.has(k)); }
+  async floatGroup(keys,to,op={}){
+    const items=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!items.length) return;
+    const ps=items.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), ys=ps.map(p=>p[1]);
+    const dx=to.x-(Math.min(...xs)+Math.max(...xs))/2, dy=to.y-(Math.min(...ys)+Math.max(...ys))/2;
+    const cl=items.map(c=>{ const e=mkLeaf(this.st.L.fx,c.spec); return {e,a:c.spec,b:shift(c.spec,dx,dy)}; });
+    await this.tw(op.dur??1200,t=>cl.forEach(q=>{ setLeaf(q.e,mixLeaf(q.a,q.b,t)); q.e.setAttribute('opacity',.55*(t<.8?Math.min(1,t*5):(1-t)/.2)); }));
+    cl.forEach(q=>q.e.remove());
+  }
+  fadeIn(els,dur=800){ els=[].concat(els).filter(Boolean); els.forEach(e=>e.setAttribute('opacity',0)); return this.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',t))); }
+  async fadeOut(els,dur=800){ els=[].concat(els).filter(Boolean); await this.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',1-t))); els.forEach(e=>e.remove()); }
+}
+
+/* ───────── number sets ───────── */
+const CY=226, WX=190, WY=626, CHY=500;
+const GL={R:'ℝ',Q:'ℚ',Z:'ℤ',W:'𝕎',N:'ℕ'}, SETS=['R','Q','Z','W','N'];
+// with 𝕎, zero is not a natural number but a whole number
+let WM=false; try{ WM=localStorage.getItem('wl-whole')==='1'; }catch(e){}
+const order=wm=>wm?['R','Q','Z','W','N']:['R','Q','Z','N'];
+
+// the numbers to sort: whole numbers, negatives, fractions (some whole in disguise), decimals, roots and π
+const NUMS=[
+  {k:'i',v:0},{k:'i',v:1},{k:'i',v:2},{k:'i',v:3},{k:'i',v:8},
+  {k:'i',v:-1},{k:'i',v:-4},{k:'i',v:-13},
+  {k:'f',a:1,b:2,x:'0.5'},{k:'d',x:'0.571428571',e:1,per:6,a:4,b:7},{k:'f',a:-2,b:3,x:'-0.6666666',e:1},{k:'f',a:10,b:2},{k:'f',a:-10,b:5},
+  {k:'d',x:'0.25'},{k:'d',x:'-1.75'},
+  {k:'r',n:2,x:'1.41421356'},{k:'r',n:3,x:'1.73205080'},{k:'r',n:16},{k:'r',n:17,x:'4.12310562'},{k:'p',x:'3.14159265'},
+  {k:'d',x:'-1.555',e:1,per:1,a:-14,b:9}
+].map((E,i)=>({...E,id:i}));
+// the buttons come in a mixed order
+const BTN=[3,6,8,15,0,11,14,4,20,19,7,9,17,1,10,13,16,5,12,2,18];
+const isRat=E=>E.k==='i'||E.k==='f'||E.k==='d'||(E.k==='r'&&Number.isInteger(Math.sqrt(E.n)));
+const isInt=E=>E.k==='i'||(E.k==='f'&&E.a%E.b===0)||(E.k==='r'&&Number.isInteger(Math.sqrt(E.n)));
+const iv=E=>E.k==='i'?E.v:E.k==='f'?E.a/E.b:Math.sqrt(E.n);
+// each test in turn; the number stops in the last set it got into
+function classify(E,wm){
+  const res=[isRat(E)]; if(res[0]) res.push(isInt(E));
+  if(res[1]) res.push(iv(E)>=0);
+  if(wm&&res[2]) res.push(iv(E)!==0);
+  let n=0; while(n<res.length&&res[n]) n++;
+  return {res,n,reg:order(wm)[n]};
+}
+
+/* ───────── numbers as trees ───────── */
+function dec(str,P,cls=''){
+  const neg=str[0]==='-', s=neg?str.slice(1):str, [a,b]=s.split('.'), out=[];
+  if(neg) out.push(num('−',P+'m',cls));
+  [...a].forEach((c,j)=>out.push(num(c,P+'i'+j,cls)));
+  if(b!=null){ out.push(dmk(P+'p',cls)); [...b].forEach((c,j)=>out.push(num(c,P+'d'+j,cls))); }
+  return row(out);
+}
+const decKeys=(str,P)=>[...(str.split('.')[1]||'')].map((_,j)=>P+'d'+j);
+const intT=(v,P)=>v<0?row(num('−',P+'m'),num(-v,P+'a')):num(v,P+'a');
+function tok(E,P){
+  if(E.k==='i') return intT(E.v,P);
+  if(E.k==='f') return row(E.a<0?num('−',P+'m'):null,frc(num(Math.abs(E.a),P+'a'),num(E.b,P+'b'),P+'f'));
+  if(E.k==='d') return row(dec(E.x,P),E.e?num('…',P+'e'):null);
+  if(E.k==='r') return rt(num(E.n,P+'a'),P+'r');
+  return num('π',P+'a','pi');
+}
+const ds=(t,key)=>num(t,key,'ds');
+
+/* ───────── the picture: where everything stands ───────── */
+// each oval: left edge, right edge, half height; the inner ones lean to the right so each set keeps room on the left
+const OV={R:[12,708,208],Q:[128,694,182],Z:[316,680,154],W:[436,666,124],N:[492,652,92]};
+const leftX=(o,y)=>{ const d=(y-o.cy)/o.ry; return o.cx-o.rx*Math.sqrt(Math.max(0,1-d*d)); };
+// the place of every number, set by set
+const SLOT={
+  R:[[74,196],[66,262],[96,330],[160,372]],
+  Q:[[184,168],[226,234],[205,318],[262,150],[300,352],[272,282]],
+  Z:[[388,178],[362,240],[372,300],[446,338]],
+  W:[[464,236]],
+  N0:[[504,194],[554,194],[604,194],[488,252],[548,256],[612,256],[551,312]],
+  N1:[[534,196],[576,196],[618,196],[536,248],[596,250],[572,294]],
+};
+// the name of each set, at the top of its own part
+const LAB0={R:[100,128],Q:[272,104],Z:[410,122],N:[551,150]}, LAB1={R:[100,128],Q:[272,104],Z:[410,122],W:[480,165],N:[572,160]};
+function geo(wm){
+  const g={ov:{},lab:{},ch:{},ar:[],slot:{}};
+  for(const k of SETS){ let [l,r,ry]=OV[k]; if(!wm&&k==='N') [l,r,ry]=OV.W; g.ov[k]={cx:(l+r)/2,cy:CY,rx:(r-l)/2,ry,o:(k==='W'&&!wm)?0:1}; }
+  const ord=order(wm);
+  const LB=wm?LAB1:LAB0; ord.forEach(k=>{ g.lab[k]={x:LB[k][0],y:LB[k][1]+11,o:1}; });
+  if(!wm) g.lab.W={...g.lab.N,o:0};
+  // the chain of tests: ℝ → ℚ → ℤ → (𝕎 →) ℕ
+  const xs=wm?{R:88,Q:224,Z:360,W:496,N:632}:{R:120,Q:280,Z:440,W:600,N:600};
+  for(const k of SETS) g.ch[k]={x:xs[k],o:(k==='W'&&!wm)?0:1};
+  const pairs=[['R','Q'],['Q','Z'],['Z','W'],['W','N']];
+  g.ar=pairs.map(([a,b],i)=>({x1:xs[a]+26,x2:Math.max(xs[a]+26,xs[b]-26),o:i===3&&!wm?0:1}));
+  const cnt={};
+  NUMS.forEach(E=>{ const r=classify(E,wm).reg, key=r==='N'?(wm?'N1':'N0'):r; cnt[key]=cnt[key]||0; const [x,y]=SLOT[key][cnt[key]++]; g.slot[E.id]={x,y}; });
+  return g;
+}
+// blend two layouts (numbers only)
+function mixG(a,b,t){ if(typeof a==='number') return lerp(a,b,t); const o=Array.isArray(a)?[]:{}; for(const k in a) o[k]=mixG(a[k],b[k],t); return o; }
+
+/* ───────── the stage keeps its sets and the numbers in them ───────── */
+class NStage extends Stage{
+  constructor(svg){ super(svg); this.L={}; for(const k of ['sets','placed','chain','marks','eq','fx']) this.L[k]=el('g',{},svg); }
+  clearWork(){ for(const k of ['marks','eq','fx']) this.L[k].textContent=''; }
+  play(script){
+    this.resume(); this.onplay&&this.onplay(true);
+    const gen=++this.gen; this.instant=false; this.clearWork();
+    return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
+      .finally(()=>{ if(this.gen===gen&&this.onend) this.onend(); });
+  }
+  stop(){ this.resume(); this.gen++; this.clearWork(); }
+}
+const SC={ov:{},lab:{},ch:{},ar:[],ic:[],tok:new Map()};
+let GEO=geo(WM);
+function buildScene(st){
+  const L=st.L;
+  for(const k of SETS){ SC.ov[k]=el('ellipse',{class:'ov'},L.sets); }
+  for(const k of SETS){ SC.lab[k]=el('text',{class:'slab','text-anchor':'middle','font-size':30},L.sets); SC.lab[k].textContent=GL[k]; }
+  for(const k of SETS){ SC.ch[k]=el('text',{class:'clet','text-anchor':'middle','font-size':32,y:CHY},L.chain); SC.ch[k].textContent=GL[k]; }
+  for(let i=0;i<4;i++){ SC.ar.push(el('path',{class:'car'},L.chain)); SC.ic.push(el('g',{class:'cic'},L.chain)); }
+  drawIcons(); applyG(GEO);
+}
+// above each arrow, the test it stands for: a fraction, no decimals, not negative, not zero
+function drawIcons(){
+  const T=[frc(V('a'),V('b')),row(dmk(),num('?')),row(opr('≥'),num(0)),row(opr('≠'),num(0))];
+  T.forEach((t,i)=>{ const g=SC.ic[i]; g.textContent=''; const Lt=lay(t,19); g._w=Lt.w; Lt.leaves.forEach(l=>mkLeaf(g,shift(l,-Lt.w/2,-12-Lt.desc))); });
+}
+function applyG(g){
+  for(const k of SETS){ const o=g.ov[k], e=SC.ov[k]; e.setAttribute('cx',o.cx); e.setAttribute('cy',o.cy); e.setAttribute('rx',o.rx); e.setAttribute('ry',o.ry); e.setAttribute('opacity',o.o);
+    const b=g.lab[k]; SC.lab[k].setAttribute('x',b.x); SC.lab[k].setAttribute('y',b.y); SC.lab[k].setAttribute('opacity',b.o);
+    SC.ch[k].setAttribute('x',g.ch[k].x); SC.ch[k].setAttribute('opacity',g.ch[k].o); }
+  g.ar.forEach((a,i)=>{ const y=CHY-11, h=6; SC.ar[i].setAttribute('d',`M${a.x1} ${y}L${a.x2} ${y}M${a.x2-h} ${y-h}L${a.x2} ${y}L${a.x2-h} ${y+h}`); SC.ar[i].setAttribute('opacity',a.o);
+    SC.ic[i].setAttribute('transform',`translate(${(a.x1+a.x2)/2} ${CHY-11})`); SC.ic[i].setAttribute('opacity',a.o); });
+  for(const [id,e] of SC.tok){ const s=g.slot[id]; e.setAttribute('transform',`translate(${s.x} ${s.y})`); }
+}
+// a number in its set, drawn around its own middle
+const TS=22;
+function tokLeaves(E,P,s){ const Lt=lay(tok(E,P),s); return Lt.leaves.map(l=>shift(l,-Lt.w/2,(Lt.asc-Lt.desc)/2)); }
+function putTok(st,E){
+  let e=SC.tok.get(E.id); if(e) e.remove();
+  e=el('g',{},st.L.placed); tokLeaves(E,'k',TS).forEach(l=>mkLeaf(e,l));
+  const s=GEO.slot[E.id]; e.setAttribute('transform',`translate(${s.x} ${s.y})`); SC.tok.set(E.id,e); return e;
+}
+function clearHi(){ for(const k of SETS) SC.ov[k].classList.remove('hi'); SC.ar.forEach(a=>a.classList.remove('act')); SC.ic.forEach(a=>a.classList.remove('act')); }
+const hiSet=k=>{ for(const j of SETS) SC.ov[j].classList.toggle('hi',j===k); };
+const actTest=(i,on)=>{ SC.ar[i].classList.toggle('act',on); SC.ic[i].classList.toggle('act',on); };
+
+/* ───────── marks: a tick for a pass, a cross for a fail, drawn like a pen stroke ───────── */
+function mark(S,ok,x,y){
+  const d=ok?`M${x} ${y}l9 10l17 -22`:`M${x+2} ${y-10}l18 18M${x+20} ${y-10}l-18 18`;
+  const e=el('path',{d,class:'mk '+(ok?'ok':'no'),pathLength:1,'stroke-dasharray':'1 2','stroke-dashoffset':1},S.st.L.marks);
+  return S.tw(700,t=>e.setAttribute('stroke-dashoffset',1-t)).then(()=>e);
+}
+const endX=tree=>WX+W(tree,34)+26;
+
+/* ───────── the tests ───────── */
+const eq_=k=>opr('=',k);
+// 1 · can it be written as a fraction?
+async function testQ(S,E,sub){
+  if(E.k==='i'){ const t=row(sub,eq_('q='),E.v<0?num('−','qm'):null,frc(num(Math.abs(E.v),'qa'),num(1,'qb'),'qf'));
+    await S.show('w',t,{from:{qm:'sm',qa:'sa'},dur2:1100}); await S.wait(500); return [t,true]; }
+  if(E.k==='f'){ await S.wiggle(['sm','sa','sb','sf.bar'],1600); await S.wait(200); return [sub,true]; }
+  if(E.per){ const ul=[], y=WY+9, s=34;
+    const seg=async(j0,j1)=>{ const x1=S.cur.get('sd'+j0).spec.x-.29*s, x2=S.cur.get('sd'+j1).spec.x+.29*s;
+      const e=el('path',{d:`M${x1} ${y}L${x2} ${y}`,class:'ul',pathLength:1,'stroke-dasharray':'1 2','stroke-dashoffset':1},S.st.L.marks); ul.push(e);
+      await S.tw(900,t=>e.setAttribute('stroke-dashoffset',1-t)); };
+    await S.wait(300); await seg(0,E.per-1); await S.wait(400);
+    const n=E.x.split('.')[1].length; await seg(E.per,n-1); await S.wait(500); await S.glow('se',1000);
+    // so it is a fraction after all
+    const t=row(sub,eq_('q='),E.a<0?num('−','qm'):null,frc(num(Math.abs(E.a),'qa'),num(E.b,'qb'),'qf'));
+    await S.show('w',t,{fade:900}); await S.wait(400); return [t,true,ul]; }
+  if(E.k==='d'){ const [a,b]=E.x.replace('-','').split('.'), digs=(a+b).replace(/^0+/,''), from={qm:'sm'};
+    // the digits of the numerator come from the digits of the decimal
+    const all=[...a].map((_,j)=>'si'+j).concat([...b].map((_,j)=>'sd'+j)), off=all.length-digs.length;
+    const nu=row([...digs].map((c,j)=>{ from['qn'+j]=all[off+j]; return num(c,'qn'+j); }));
+    const t=row(sub,eq_('q='),E.x[0]==='-'?num('−','qm'):null,frc(nu,num(10**b.length,'qb'),'qf'));
+    await S.show('w',t,{from,dur2:1200}); await S.wait(500); return [t,true]; }
+  if(isRat(E)){ const r=Math.sqrt(E.n), t1=row(sub,eq_('q='),num(r,'qv')), t2=row(t1,eq_('q2'),frc(num(r,'qa'),num(1,'qb'),'qf'));
+    await S.show('w',t1,{fade:800}); await S.wait(700);
+    await S.show('w',t2,{from:{qa:'qv'},dur2:1100}); await S.wait(500); return [t2,true]; }
+  // a root or π: the decimals go on and on
+  const [a,b]=E.x.split('.'); let t;
+  for(let j=0;j<=b.length;j++){ t=row(sub,eq_('q='),dec(j?a+'.'+b.slice(0,j):a,'x')); await S.show('w',t,{fade:j?320:700}); await S.wait(j?90:300); }
+  t=row(t,num('…','xe')); await S.show('w',t,{fade:600}); await S.wait(200); await S.glow('xe',1200);
+  return [t,false];
+}
+// the small decimal mark swells more than a digit would while it pulses red
+function pulseMark(S,key,dur=2400){
+  const c=S.cur.get(key); if(!c) return Promise.resolve(); const cx=c.spec.x, cy=c.spec.y-.06*c.spec.s;   // the mark sits on the baseline
+  return S.tw(dur,t=>{ const p=Math.sin(Math.PI*((t*2)%1)), k=1+.9*p;
+    c.el.style.fill=t>=1?'':`color-mix(in srgb, var(--cR) ${Math.round(p*100)}%, var(--ink))`;
+    c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`); },true);
+}
+// 2 · written as a decimal, is there a decimal mark?
+async function testZ(S,E,sub){
+  if(isInt(E)){
+    if(E.k==='i'){ await S.wait(300); await S.wiggle(['sm','sa'],1400); return [sub,true]; }
+    const t=row(sub,eq_('z='),intT(iv(E),'x'));
+    await S.show('w',t,{fade:900}); await S.wait(400); await S.wiggle(['xm','xa'],1400); return [t,true]; }
+  if(E.k==='d'){ await S.wait(300); await pulseMark(S,'sp'); return [sub,false]; }
+  const t=row(sub,eq_('z='),dec(E.x,'x'),E.e?num('…','xe'):null);
+  await S.show('w',t,{fade:900}); await S.wait(500); await pulseMark(S,'xp'); return [t,false];
+}
+// 3 · is it negative?  4 · is it zero?
+async function testSign(S,E,sub,zero){
+  const v=iv(E), rel=zero?(v!==0?'≠':'='):(v>=0?'≥':'<'), lit=E.k==='i';
+  const t=row(sub,lit?null:eq_('y='),lit?null:intT(v,'y'),opr(rel,'yr'),num(0,'y0'));
+  await S.show('w',t,{fade:900}); await S.wait(500);
+  const ok=zero?v!==0:v>=0;
+  if(!ok) await S.pulseRed(zero?[lit?'sa':'ya','yr']:[lit?'sm':'ym'],2000);
+  return [t,ok];
+}
+
+async function runNum(S,E){
+  const C=classify(E,WM), ord=order(WM), sub=tok(E,'s'), tests=[testQ,testZ,(S,E,s)=>testSign(S,E,s,false),(S,E,s)=>testSign(S,E,s,true)];
+  clearHi(); const old=SC.tok.get(E.id); if(old) old.setAttribute('opacity',0);
+  S.cfg('w',{cx:WX,y:WY,s:34,al:'l'});
+  await S.show('w',sub,{fade:800}); await S.wait(400);
+  // it starts in ℝ, in the chain and in the picture
+  const rx=k=>GEO.ch[k].x-25, ring=el('rect',{x:rx('R'),y:CHY-37,width:50,height:50,rx:14,class:'ring',opacity:0},S.st.L.marks);
+  hiSet('R'); await S.tw(700,t=>ring.setAttribute('opacity',t)); await S.wait(500);
+  let at=0;
+  for(let k=0;k<C.res.length;k++){
+    actTest(k,true); await S.wait(700);
+    const [t,ok,ex=[]]=await tests[k](S,E,sub);
+    const m=await mark(S,ok,endX(t),WY-12); await S.wait(700);
+    actTest(k,false);
+    if(!ok){ await S.all(S.tw(700,u=>[m,...ex].forEach(e=>e.setAttribute('opacity',1-u))),S.show('w',sub,{dur:900})); m.remove(); await S.wait(300); break; }
+    // through the gate: the ring moves on, and the next set lights up
+    const a=rx(ord[at]), b=rx(ord[at+1]); at++; hiSet(ord[at]);
+    await S.all(S.tw(1100,u=>ring.setAttribute('x',lerp(a,b,u))), S.tw(700,u=>[m,...ex].forEach(e=>e.setAttribute('opacity',1-u))), k+1<C.res.length?S.show('w',sub,{dur:900}):null);
+    m.remove(); ex.forEach(e=>e.remove()); await S.wait(300);
+  }
+  // the number floats up into its set
+  await fly(S,E);
+  await S.tw(900,t=>ring.setAttribute('opacity',1-t)); clearHi();
+}
+async function fly(S,E){
+  const A=lay(sub0(E),34), a=A.leaves.map(l=>shift(l,WX,WY)), sl=GEO.slot[E.id], b=tokLeaves(E,'s',TS).map(l=>shift(l,sl.x,sl.y));
+  const cl=a.map(l=>mkLeaf(S.st.L.fx,l));
+  for(const [k,c] of S.cur) if(c.line==='w'){ c.el.remove(); S.cur.delete(k); }
+  S.st.L.marks.querySelectorAll('.mk').forEach(e=>e.remove());
+  const h=70;
+  await S.tw(1600,t=>cl.forEach((e,i)=>setLeaf(e,mixLeaf(a[i],b[i],t,0,-h*Math.sin(Math.PI*t)))));
+  putTok(S.st,E); cl.forEach(e=>e.remove());
+}
+const sub0=E=>tok(E,'s');
+
+/* ───────── static pictures ───────── */
+function svgOf(tree,s,pad=6){
+  const L=lay(tree,s), w=L.w+2*pad, h=L.asc+L.desc+2*pad, svg=el('svg',{viewBox:`0 0 ${w} ${h}`,width:w,height:h,class:'ic','aria-hidden':'true'});
+  L.leaves.forEach(l=>mkLeaf(svg,shift(l,pad,pad+L.asc))); return svg;
+}
+function say(n){
+  if(n.t==='n'||n.t==='o') return n.text;
+  if(n.t==='d') return DM;
+  if(n.t==='R') return '√('+say(n.c)+')';
+  if(n.t==='r') return n.ch.map(say).join('');
+  if(n.t==='f') return say(n.nu)+'/'+say(n.de);
+  return '';
+}
+const comma=()=>opr(',',null);
+const list=(...xs)=>row(num('{'),xs.flatMap((x,i)=>i?[num(','),cellN(8),x]:[x]),num('}'));
+function statics(){
+  const ord=order(WM).slice().reverse();
+  document.getElementById('ops').replaceChildren(svgOf(row(ord.flatMap((k,i)=>i?[cellN(40),ds(GL[k])]:[ds(GL[k])])),64,2));
+  // the legend: which numbers are natural (and whole)
+  const N0=row(ds('ℕ'),opr('='),list(num(0),num(1),num(2),num(3),num('…')));
+  const N1=row(ds('ℕ'),opr('='),list(num(1),num(2),num(3),num('…')));
+  const W0=row(ds('𝕎'),opr('='),list(num(0),num(1),num(2),num(3),num('…')));
+  document.getElementById('legend').replaceChildren(svgOf(WM?row(W0,cellN(40),N1):N0,22,2));
+  // the decimal mark: point or comma
+  const sw=document.getElementById('dmsw'); sw.replaceChildren();
+  [',','.'].forEach(c=>{ const bt=document.createElement('button'); bt.type='button'; bt.setAttribute('aria-label','0'+c+'5'); bt.setAttribute('aria-pressed',DM===c);
+    bt.className=DM===c?'on':''; const sv=DM; DM=c; bt.appendChild(svgOf(row(num(0),dmk(),num(5)),18)); DM=sv;
+    bt.addEventListener('click',()=>setDM(c)); sw.appendChild(bt); });
+  // whole numbers on or off: a box with a tick, and 𝕎
+  const ws=document.getElementById('wsw'); ws.replaceChildren();
+  const bt=document.createElement('button'); bt.type='button'; bt.setAttribute('aria-label','𝕎?'); bt.setAttribute('aria-pressed',WM); bt.className=WM?'on':'';
+  const sv=el('svg',{viewBox:'0 0 64 26',width:64,height:26,class:'ic','aria-hidden':'true'});
+  el('rect',{x:2,y:4,width:18,height:18,rx:4,fill:'none',stroke:'currentColor','stroke-width':2},sv);
+  if(WM) el('path',{d:'M6 13l4 4.5l7 -9',fill:'none',stroke:'currentColor','stroke-width':2.6,'stroke-linecap':'round','stroke-linejoin':'round'},sv);
+  const tx=el('text',{x:37,y:21,'text-anchor':'middle','font-size':22,class:'lf ds'},sv); tx.textContent='𝕎';
+  const q=el('text',{x:56,y:20,'text-anchor':'middle','font-size':18,class:'lf'},sv); q.textContent='?';
+  bt.appendChild(sv); bt.addEventListener('click',()=>setWM(!WM)); ws.appendChild(bt);
+  const gl=document.querySelector('.glyph'); gl.replaceChildren(svgOf(ds('⊂'),44,2));
+}
+
+/* ───────── wiring ───────── */
+const sec=document.querySelector('[data-sec=ns]'), st=new NStage(sec.querySelector('svg.stage'));
+const exBar=sec.querySelector('.exs'), pp=sec.querySelector('.pp'), rs=sec.querySelector('.rs');
+let cur=null, releaseT=null, dropT=null, morph=null;
+function setFocus(on){
+  clearTimeout(releaseT); clearTimeout(dropT);
+  if(on) sec.classList.add('active'); else dropT=setTimeout(()=>sec.classList.remove('active'),2100);
+  document.body.classList.toggle('focusing',on);
+}
+const ICO_PAUSE='<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><rect x="2" y="2" width="5" height="16" rx="1.5" fill="currentColor"/><rect x="11" y="2" width="5" height="16" rx="1.5" fill="currentColor"/></svg>';
+const ICO_PLAY='<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><path d="M3 2.5 L16 10 L3 17.5 Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+const ppShow=()=>{ pp.innerHTML=st.paused?ICO_PLAY:ICO_PAUSE; pp.setAttribute('aria-label',st.paused?'▶':'❚❚'); pp.setAttribute('aria-pressed',st.paused); };
+pp.addEventListener('click',()=>{ st.paused?st.resume():st.pause(); ppShow(); });
+st.onplay=()=>{ setTimeout(ppShow); pp.hidden=false; setFocus(true); };
+st.onend=()=>{ cur=null; clearTimeout(releaseT); releaseT=setTimeout(()=>setFocus(false),1300); };
+const btns=[];
+const markBtns=()=>btns.forEach((b,i)=>{ const on=SC.tok.has(i); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
+// a number that is still being tested goes straight to its set
+function finish(){
+  if(morph) morph.end();
+  if(cur){ const E=cur; cur=null; st.stop(); clearHi(); putTok(st,E); SC.tok.get(E.id).setAttribute('opacity',1); markBtns(); }
+}
+function start(E){
+  finish(); cur=E; rs.hidden=false;
+  st.play(S=>runNum(S,E).then(()=>{ if(cur===E) cur=null; markBtns(); }));
+}
+const draw=()=>NUMS.forEach((E,i)=>{ const b=btns[i]; b.setAttribute('aria-label',say(tok(E,null))); b.replaceChildren(svgOf(tok(E,null),17,3)); });
+NUMS.forEach((E,i)=>{ const b=document.createElement('button'); b.type='button'; b.id='ex-ns-'+i; b.addEventListener('click',()=>start(E)); btns.push(b); });
+BTN.forEach(i=>exBar.appendChild(btns[i]));
+// everything back to empty sets
+rs.addEventListener('click',()=>{ finish(); st.stop(); for(const e of SC.tok.values()) e.remove(); SC.tok.clear(); clearHi(); markBtns(); rs.hidden=true; pp.hidden=true; setFocus(false); });
+// a new decimal mark: numbers with decimals are redrawn where they are
+function setDM(c){
+  if(c===DM) return; finish(); DM=c; try{ localStorage.setItem('wl-decimal-mark',c); }catch(e){}
+  statics(); draw(); drawIcons(); for(const id of [...SC.tok.keys()]) putTok(st,NUMS[id]); setFocus(false);
+}
+// whole numbers on or off: the ovals and the numbers glide to their new places
+function setWM(on){
+  finish(); setFocus(false); WM=on; try{ localStorage.setItem('wl-whole',on?'1':'0'); }catch(e){}
+  statics(); const A=GEO, B=geo(on); GEO=B;
+  if(RM){ applyG(B); return; }
+  const t0=performance.now(), dur=1400; let done=false;
+  morph={end(){ done=true; applyG(B); morph=null; }};
+  const step=()=>{ if(done) return; const t=Math.min(1,(performance.now()-t0)/dur); applyG(mixG(A,B,ease(t))); t<1?requestAnimationFrame(step):morph&&morph.end(); };
+  requestAnimationFrame(step);
+}
+document.addEventListener('keydown',e=>{
+  if(e.code!=='Space'||!cur||e.target.closest('button,input,textarea')) return;
+  e.preventDefault(); st.paused?st.resume():st.pause(); ppShow();
+});
+statics(); buildScene(st); draw(); markBtns();
+</script>
+
+</html>

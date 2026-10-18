@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="zxx">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}.home{align-self:flex-start;margin-bottom:-24px;font:600 14px/1 var(--font);padding:9px 14px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);text-decoration:none;position:relative;transition:opacity 2s,border-color .3s}
+.home:hover{border-color:var(--mute)}
+.home:focus-visible{outline:3px solid var(--cB);outline-offset:2px}
+body.focusing .home{opacity:.4;transition-duration:.9s}
+</style>
+<title>Signs in Motion</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;600;800&display=swap">
+<style>
+/* Layout: one column of stages; each stage = number line (bottom) + token table (middle) + equation (top). Orange filled = +1, blue ring = −1. */
+:root{
+  --bg:#EDF0F4; --panel:#FFFFFF; --ink:#172031; --mute:#7D879A; --rule:#D3D9E2; --dim:rgba(16,22,34,.16);
+  --pos:#DD5F0B; --neg:#2357D4; --tokink:#FFFFFF;
+  --font:'Azeret Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1015; --panel:#161A21; --ink:#E6E9EF; --mute:#77839A; --rule:#2B323E; --dim:rgba(0,0,0,.45);
+  --pos:#FF8A42; --neg:#6E97FF; --tokink:#161A21; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1015; --panel:#161A21; --ink:#E6E9EF; --mute:#77839A; --rule:#2B323E; --dim:rgba(0,0,0,.45);
+  --pos:#FF8A42; --neg:#6E97FF; --tokink:#161A21; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--font)}
+.wrap{max-width:936px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:36px 72px;display:flex;flex-direction:column;gap:44px}
+
+.top{display:flex;flex-direction:column;align-items:center;gap:18px}
+.titles{text-align:center}
+.titles h1{font:800 clamp(28px,5.5vw,46px)/1.1 var(--font);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.titles .by{margin:8px 0 0;font-size:15px;color:var(--mute);letter-spacing:.02em}
+.dimmer{position:fixed;inset:0;background:var(--dim);opacity:0;pointer-events:none;transition:opacity 2s;z-index:1}
+body.focusing .dimmer{opacity:1}
+.top,.sec{position:relative;transition:opacity 2s}
+/* dimming comes in quickly, and lifts slowly a moment after the animation ends */
+body.focusing .dimmer,body.focusing .top,body.focusing .sec,body.focusing .note{transition-duration:.9s}
+body.focusing .top,body.focusing .sec:not(.active){opacity:.4}
+.sec.active{z-index:2}
+@media (prefers-reduced-motion: reduce){.dimmer,.top,.sec{transition:none}}
+tspan.sl{font-size:1.45em;baseline-shift:-.12em} span.sl{font-size:1.4em;line-height:0;vertical-align:-.1em}
+.ops .sl,.glyph .sl,.signs .sl{font-size:1em;vertical-align:0}
+.ops{font-size:clamp(48px,11vw,96px);font-weight:800;letter-spacing:.12em;line-height:1}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 28px;font-size:20px;font-weight:600}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+
+.chip{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-style:normal;font-weight:800;font-size:18px;line-height:1;box-sizing:border-box}
+.chip.p{background:var(--pos);color:var(--tokink)}
+.chip.p::after{content:"+"}
+.chip.n{border:3px solid var(--neg);color:var(--neg);background:var(--panel)}
+.chip.n::after{content:"\2212"}
+
+.sec{display:grid;grid-template-columns:152px minmax(0,1fr);gap:16px;align-items:start}
+.glyph{font-size:64px;font-weight:800;line-height:1;text-align:center;padding-top:10px}
+@media (max-width:640px){.sec{grid-template-columns:minmax(0,1fr)}.glyph{font-size:44px;text-align:left;padding-top:0}}
+
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:16px;overflow:hidden;min-width:0}
+svg.stage{display:block;width:100%;height:auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-top:1px solid var(--rule);align-items:center}
+.exs{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+.bar button{font:600 15px/1 var(--font);padding:9px 13px;border-radius:999px;border:1.5px solid var(--rule);background:transparent;color:var(--ink);cursor:pointer;white-space:nowrap}
+.bar button:hover{border-color:var(--mute)}
+.bar button.on{border:2px solid var(--ink);background:var(--bg)}
+.bar .replay{font-size:20px;padding:6px 12px;min-width:46px;display:inline-flex;align-items:center;justify-content:center;align-self:stretch}
+.bar .pp[aria-pressed="true"]{border:2px solid var(--pos);color:var(--pos)}
+button:focus-visible{outline:3px solid var(--neg);outline-offset:2px}
+
+.tp{fill:var(--pos);color:var(--pos)} .tn{fill:var(--neg);color:var(--neg)} .tz,.to{fill:var(--ink);color:var(--ink)}
+
+svg text{font-family:var(--font)}
+.axis{stroke:var(--ink);stroke-width:2}
+.axhead{fill:var(--ink)}
+.tick{stroke:var(--mute);stroke-width:1.5}
+.tick0{stroke:var(--ink);stroke-width:2.5}
+.lab{font-size:15px;font-weight:600;paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round;transition:opacity .3s}
+.lab.p{fill:var(--pos)} .lab.n{fill:var(--neg)} .lab.z{fill:var(--ink);font-weight:800}
+.walker circle{fill:var(--ink);stroke:var(--panel);stroke-width:3}
+.walker.p circle{fill:var(--pos)} .walker.n circle{fill:var(--neg)}
+.arc{transition:opacity .4s}
+.arc .a{fill:none;stroke-width:3;stroke-linecap:round}
+.arc.p .a{stroke:var(--pos)} .arc.p .h{fill:var(--pos)}
+.arc.n .a{stroke:var(--neg)} .arc.n .h{fill:var(--neg)}
+.arc.ghost .a{stroke-dasharray:6 6}
+.mini .a{stroke-width:2.5}
+.tok.p circle{fill:var(--pos)}
+.tok.n circle{fill:var(--panel);stroke:var(--neg);stroke-width:3}
+.tok .sym{fill:none;stroke-width:3;stroke-linecap:round}
+.tok.p .sym{stroke:var(--tokink)} .tok.n .sym{stroke:var(--neg)}
+.zero{font-weight:800;fill:var(--ink)}
+.cap{fill:none;stroke:var(--mute);stroke-width:1.5;stroke-dasharray:3 4}
+.capz{font-size:15px;font-weight:800;fill:var(--mute)}
+.box{fill:none;stroke-width:2;stroke-dasharray:4 5}
+.box.p{stroke:var(--pos)} .box.n{stroke:var(--neg)}
+.eq{font-size:34px;font-weight:600}
+.eq2{font-size:22px;font-weight:600}
+.eq .dimmed,.eq2 .dimmed{fill:var(--rule)}
+.count{font-size:56px;font-weight:800}
+.glabel{font-size:16px;font-weight:800}
+.pl{font-size:20px;font-weight:600} .pl.hot{font-weight:800}
+.note{font-size:14px;font-weight:600}
+.rdot{stroke:var(--panel);stroke-width:2}
+.rdot.p{fill:var(--pos)} .rdot.n{fill:var(--neg)} .rdot.z{fill:var(--ink)}
+.flag line{stroke-width:2} .flag.p line{stroke:var(--pos)} .flag.p path{fill:var(--pos)}
+.flag.n line{stroke:var(--neg)} .flag.n path{fill:var(--neg)}
+.float{font-weight:800}
+.stepsum{font-size:26px;font-weight:800}
+.cross{font-size:22px;font-weight:800;fill:var(--mute)}
+
+.sum{padding:32px 24px;display:flex;flex-direction:column;gap:56px;align-items:center}
+.laws{display:flex;flex-wrap:wrap;justify-content:center;gap:20px 96px;font-size:clamp(20px,4.6vw,28px);font-weight:600}
+.tables{display:flex;flex-wrap:wrap;justify-content:center;gap:28px 96px}
+.signs{border-collapse:separate;border-spacing:6px}
+.signs th,.signs td{width:46px;height:46px;text-align:center;border-radius:10px}
+.signs td{background:var(--bg)}
+.signs th:first-child:empty{background:none}
+.signs tr:first-child th:first-child{font-size:30px;font-weight:800}
+@media (prefers-reduced-motion: reduce){.lab,.arc{transition:none}}
+.note{position:relative;transition:opacity 2s;max-width:62ch;margin:0 auto;text-align:center;font-size:13px;line-height:1.6;color:var(--mute)}
+.note p{margin:0}
+body.focusing .note{opacity:.4}
+</style>
+
+<div class="wrap">
+  <a class="home" href="index.html" lang="sv">← Tillbaks till menyn</a>
+  <div class="dimmer" aria-hidden="true"></div>
+  <header class="top">
+    <div class="titles"><h1>Wordless explanations</h1><p class="by">by Niklas Jonsson Kaino</p></div>
+    <div class="ops" aria-hidden="true">+ <span class="tn">−</span> · /</div>
+    <div class="legend">
+      <span><i class="chip p"></i> = <b class="tp">1</b></span>
+      <span><i class="chip n"></i> = <b class="tn">−1</b></span>
+      <span><i class="chip p"></i><i class="chip n"></i> = <b class="tz">0</b></span>
+    </div>
+  </header>
+
+  <section class="sec" data-scene="found">
+    <div class="glyph" aria-hidden="true">±</div>
+    <div class="card"><svg class="stage" viewBox="-40 0 720 450"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div>
+  </section>
+
+  <section class="sec" data-scene="add">
+    <div class="glyph" aria-hidden="true">+</div>
+    <div class="card"><svg class="stage" viewBox="-40 0 720 450"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div>
+  </section>
+
+  <section class="sec" data-scene="sub">
+    <div class="glyph" aria-hidden="true">−</div>
+    <div class="card"><svg class="stage" viewBox="-40 0 720 450"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div>
+  </section>
+
+  <section class="sec" data-scene="mul">
+    <div class="glyph" aria-hidden="true">·</div>
+    <div class="card"><svg class="stage" viewBox="-40 0 720 450"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div>
+  </section>
+
+  <section class="sec" data-scene="div">
+    <div class="glyph" aria-hidden="true">/</div>
+    <div class="card"><svg class="stage" viewBox="-40 0 720 450"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div>
+  </section>
+
+  <section class="sec">
+    <div class="glyph" aria-hidden="true">=</div>
+    <div class="card sum">
+      <div class="laws">
+        <div>a + (<span class="tn">−</span>b) = a − b</div>
+        <div>a − (<span class="tn">−</span>b) = a + b</div>
+      </div>
+      <div class="tables">
+        <table class="signs">
+          <tr><th>·</th><th><i class="chip p"></i></th><th><i class="chip n"></i></th></tr>
+          <tr><th><i class="chip p"></i></th><td><i class="chip p"></i></td><td><i class="chip n"></i></td></tr>
+          <tr><th><i class="chip n"></i></th><td><i class="chip n"></i></td><td><i class="chip p"></i></td></tr>
+        </table>
+        <table class="signs">
+          <tr><th>/</th><th><i class="chip p"></i></th><th><i class="chip n"></i></th></tr>
+          <tr><th><i class="chip p"></i></th><td><i class="chip p"></i></td><td><i class="chip n"></i></td></tr>
+          <tr><th><i class="chip n"></i></th><td><i class="chip n"></i></td><td><i class="chip p"></i></td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+  <footer class="note">
+    <p>The dot (·) is used for multiplication instead of the cross (×), so it can't be confused with the variable x.</p>
+    <p>The slash (/) is used for division instead of the obelus (÷), so it can't be confused with the plus sign (+).</p>
+  </footer>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg', CANCEL=Symbol('cancel'), M='−';
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const LY=330, U=36, CX=320, ROWP=150, ROWN=212;
+const X=v=>CX+v*U;
+const RX=/−?\d+|−|\/|[^\d−\/]+/g;
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const sg=v=>v>0?'p':v<0?'n':'z';
+const fmt=(n,lead)=>n<0?(lead?M+(-n):'('+M+(-n)+')'):String(Math.abs(n));
+function kind(w){ if(w==='/') return 'to sl'; if(/^−\d+$/.test(w)) return 'tn'; if(/^\d+$/.test(w)) return /^0+$/.test(w)?'tz':'tp'; return 'to'; }
+function el(tag,attrs,parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+function rich(parent,x,y,str,klass,anchor='middle'){
+  const t=el('text',{x,y,class:klass,'text-anchor':anchor},parent);
+  t.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve');
+  t.style.whiteSpace='pre';
+  const groups=str.split('|').map((gs,gi)=>(gs.match(RX)||[]).map(w=>{
+    const sp=el('tspan',{class:kind(w)},t); sp.textContent=w;
+    if(gi>0) sp.setAttribute('fill-opacity',0); return sp; }));
+  return {el:t,groups,shown:1,nums:groups.flat().filter(s=>/\d/.test(s.textContent))};
+}
+const symD=s=>s>0?'M-7 0H7M0 -7V7':'M-7 0H7';
+
+class Stage{
+  constructor(svg){ this.svg=svg; this.gen=0; this.acc=0; this.pausedAt=null; }
+  now(){ return (this.pausedAt??performance.now())-this.acc; }
+  pause(){ if(this.pausedAt==null) this.pausedAt=performance.now(); }
+  resume(){ if(this.pausedAt!=null){ this.acc+=performance.now()-this.pausedAt; this.pausedAt=null; } }
+  get paused(){ return this.pausedAt!=null; }
+  play(script,instant){
+    this.resume(); this.onplay&&this.onplay();
+    const gen=++this.gen; this.instant=!!instant; this.svg.textContent='';
+    this.L={}; for(const k of ['line','arcs','marks','tok','walk','eq']) this.L[k]=el('g',{},this.svg);
+    return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
+      .finally(()=>{ if(this.gen===gen&&this.onend) this.onend(); });
+  }
+}
+
+class Ctx{
+  constructor(st,gen){ Object.assign(this,{st,gen,pos:0,P:[],N:[],n:1,caps:[],labels:{},eqs:{}}); }
+  /* everything runs on the stage clock, which stands still while paused */
+  run(d,fn){
+    const st=this.st, gen=this.gen;
+    return new Promise((res,rej)=>{
+      if(st.gen!==gen) return rej(CANCEL);
+      if(d<=0){ fn&&fn(1); return res(); }
+      const t0=st.now();
+      const f=()=>{ if(st.gen!==gen) return rej(CANCEL); const t=Math.min(1,(st.now()-t0)/d); fn&&fn(ease(t)); t<1?requestAnimationFrame(f):res(); };
+      requestAnimationFrame(f);
+    });
+  }
+  tw(dur,fn){ return this.run((this.st.instant||RM)?0:dur,fn); }
+  wait(ms){ return this.run(this.st.instant?0:ms,null); }
+  all(...ps){ return Promise.all(ps); }
+
+  /* number line + walker */
+  line(min=-8,max=8,hidden=false){
+    const g=this.st.L.line;
+    el('line',{x1:X(min)-16,x2:X(max)+16,y1:LY,y2:LY,class:'axis'},g);
+    el('path',{d:`M${X(max)+24} ${LY} l-10 -6 v12z`,class:'axhead'},g);
+    el('path',{d:`M${X(min)-24} ${LY} l10 -6 v12z`,class:'axhead'},g);
+    for(let v=min;v<=max;v++){
+      el('line',{x1:X(v),x2:X(v),y1:LY-(v?6:10),y2:LY+(v?6:10),class:v?'tick':'tick0'},g);
+      const t=el('text',{x:X(v),y:LY+32,class:'lab '+sg(v),'text-anchor':'middle'},g);
+      t.textContent=fmt(v,1); if(hidden&&v) t.style.opacity=0; this.labels[v]=t;
+    }
+  }
+  walker(v){ const g=el('g',{},this.st.L.walk); this.Wc=el('circle',{r:9},g); this.W=g; this.pos=v; this.wAt(X(v),LY); this.wcls(); }
+  base(){ this.line(); this.walker(0); }
+  wAt(x,y){ this.W.setAttribute('transform',`translate(${x} ${y})`); }
+  wcls(){ this.W.setAttribute('class','walker '+sg(this.pos)); }
+  reveal(v){ const t=this.labels[v]; if(t) t.style.opacity=1; }
+  showAll(){ Object.values(this.labels).forEach(t=>t.style.opacity=1); }
+  async slideW(to,dur=600){ const x0=X(this.pos); await this.tw(dur,k=>this.wAt(lerp(x0,X(to),k),LY)); this.pos=to; this.wcls(); }
+  async pulse(){ await this.tw(600,k=>this.Wc.setAttribute('r',9+7*Math.sin(Math.PI*k))); }
+  dot(v){ el('circle',{cx:X(v),cy:LY,r:5,class:'rdot '+sg(v)},this.st.L.marks); }
+  dim(){ for(const a of this.st.L.arcs.children) if(!a.dataset.keep) a.style.opacity=.18; }
+
+  /* jump arcs */
+  mkArc(from,to,o={}){
+    const x1=X(from), x2=X(to), side=o.below?1:-1, h=Math.min(64,16+Math.abs(to-from)*8);
+    const mx=(x1+x2)/2, cy=LY+side*2*h;
+    const g=el('g',{class:'arc '+sg(to-from)+(o.ghost?' ghost':'')},this.st.L.arcs);
+    const p=el('path',{class:'a',d:`M${x1} ${LY} Q${mx} ${cy} ${x2} ${LY}`},g);
+    const ang=Math.atan2(LY-cy,x2-mx)*180/Math.PI;
+    const hd=el('path',{class:'h',d:'M2 0 L-10 -6 L-10 6 Z',transform:`translate(${x2} ${LY}) rotate(${ang})`},g);
+    return {g,p,hd,from,to,x1,x2,mx,cy,rot:0};
+  }
+  async drawArc(A,dur,walk){
+    let L=0; try{ L=A.p.getTotalLength(); }catch(e){}
+    if(!L) L=Math.abs(A.x2-A.x1)+2*Math.abs(A.cy-LY);
+    A.p.style.strokeDasharray=L; A.p.style.strokeDashoffset=L; A.hd.style.opacity=0;
+    await this.tw(dur,k=>{
+      A.p.style.strokeDashoffset=L*(1-k);
+      if(walk){ const u=1-k; this.wAt(u*u*A.x1+2*u*k*A.mx+k*k*A.x2, u*u*LY+2*u*k*A.cy+k*k*LY); }
+    });
+    A.p.style.strokeDasharray='none'; A.hd.style.opacity=1;
+  }
+  async hop(to,o={}){
+    const from=this.pos; if(to===from) return;
+    const A=this.mkArc(from,to,o);
+    await this.drawArc(A,o.dur??(360+Math.abs(to-from)*70),true);
+    this.pos=to; this.wcls(); this.reveal(to); return A;
+  }
+  async ghost(from,to){
+    const A=this.mkArc(from,to,{ghost:true}); A.g.dataset.keep=1;
+    await this.fadeIn(A.g,350); return A;
+  }
+  async rotArc(A,dur=1000,walk=false,dir=1){
+    if(!A.copy){
+      const c=A.g.cloneNode(true); c.removeAttribute('transform'); c.style.opacity=''; c.setAttribute('opacity',.4); c.dataset.keep=1;
+      const cp=c.querySelector('.a'); cp.style.strokeDasharray='6 6'; cp.style.strokeDashoffset=0;
+      this.st.L.arcs.insertBefore(c,A.g); A.copy=c;
+    }
+    const r0=A.rot, r1=A.rot+180*dir, dx=A.x2-A.x1; let sw=false;
+    await this.tw(dur,k=>{
+      const r=lerp(r0,r1,k); A.g.setAttribute('transform',`rotate(${r} ${A.x1} ${LY})`);
+      if(!sw&&k>=.5){ sw=true; const c=A.g.getAttribute('class'); A.g.setAttribute('class',c.includes(' p')?c.replace(' p',' n'):c.replace(' n',' p')); }
+      if(walk){ const rad=r*Math.PI/180; this.wAt(A.x1+dx*Math.cos(rad),LY+dx*Math.sin(rad)); }
+    });
+    A.rot=r1;
+  }
+  mini(i,n,dir,flip){
+    const x=CX+(i-(n-1)/2)*46, y=240;
+    const g=el('g',{class:'arc mini '+sg(dir),transform:`translate(${x} ${y}) scale(${dir} ${flip?-1:1})`},this.st.L.marks);
+    el('path',{class:'a',d:'M-15 4 Q0 -18 13 4'},g);
+    el('path',{class:'h',d:'M16 6 L6 -1 L9 9 Z'},g);
+    return this.fadeIn(g,250);
+  }
+
+  /* tokens */
+  colX(c){ return CX+(c-(this.n-1)/2)*36; }
+  tok(sign,x,y){
+    const g=el('g',{class:'tok '+sg(sign)},this.st.L.tok);
+    el('circle',{r:14},g); const sym=el('path',{class:'sym',d:symD(sign)},g);
+    const T={g,sym,sign,x,y,s:0,sx:1}; this.setT(T); return T;
+  }
+  setT(T){ T.g.setAttribute('transform',`translate(${T.x} ${T.y}) scale(${T.s*T.sx} ${T.s})`); }
+  pop(T,dur=240){ return this.tw(dur,k=>{ T.s=k; this.setT(T); }); }
+  async popAfter(T,ms){ await this.wait(ms); await this.pop(T); }
+  move(T,x,y,dur=420){ const x0=T.x,y0=T.y; return this.tw(dur,k=>{ T.x=lerp(x0,x,k); T.y=lerp(y0,y,k); this.setT(T); }); }
+  drop(T){ T.g.remove(); for(const arr of [this.P,this.N]){ const i=arr.indexOf(T); if(i>=0) arr.splice(i,1); } }
+  async addTok(sign,o={}){
+    const arr=sign>0?this.P:this.N, col=o.col??arr.length;
+    const T=this.tok(sign,this.colX(col),sign>0?ROWP:ROWN); T.col=col; arr.push(T);
+    await this.all(this.pop(T), o.hop===false?null:this.hop(this.pos+sign,{dur:380}));
+    return T;
+  }
+  async take(T,dur=420){ const y0=T.y; await this.tw(dur,k=>{ T.y=y0-48*k; this.setT(T); T.g.setAttribute('opacity',1-k); }); this.drop(T); }
+  async fadeTok(T,dur=350){ await this.tw(dur,k=>T.g.setAttribute('opacity',1-k)); this.drop(T); }
+  async flip(T,dur=900){
+    const y0=T.y, y1=T.sign>0?ROWN:ROWP; let sw=false;
+    await this.tw(dur,k=>{
+      T.sx=Math.max(.04,Math.abs(Math.cos(Math.PI*k)));
+      if(!sw&&k>=.5){ sw=true; T.sign=-T.sign; T.g.setAttribute('class','tok '+sg(T.sign)); T.sym.setAttribute('d',symD(T.sign)); }
+      T.y=lerp(y0,y1,k); this.setT(T);
+    });
+    T.sx=1; this.setT(T);
+  }
+  async annihilate(A,B){
+    const mx=(A.x+B.x)/2, my=(A.y+B.y)/2;
+    await this.all(this.move(A,mx,my,320),this.move(B,mx,my,320));
+    const z=el('text',{x:mx,y:my+8,class:'zero','text-anchor':'middle','font-size':18},this.st.L.tok); z.textContent='0';
+    await this.tw(420,k=>{ A.s=B.s=1-k; this.setT(A); this.setT(B); z.setAttribute('opacity',Math.sin(Math.PI*k)); z.setAttribute('font-size',18+16*k); });
+    z.remove(); this.drop(A); this.drop(B);
+  }
+  async cancelPairs(){
+    const P=[...this.P].sort((a,b)=>a.col-b.col), N=[...this.N].sort((a,b)=>a.col-b.col);
+    for(let i=0;i<Math.min(P.length,N.length);i++) await this.annihilate(P[i],N[i]);
+  }
+  async compact(dur=450){
+    const P=[...this.P].sort((a,b)=>a.col-b.col), N=[...this.N].sort((a,b)=>a.col-b.col);
+    this.n=Math.max(P.length,N.length,1); const ps=[];
+    P.forEach((T,i)=>{ T.col=i; ps.push(this.move(T,this.colX(i),ROWP,dur)); });
+    N.forEach((T,i)=>{ T.col=i; ps.push(this.move(T,this.colX(i),ROWN,dur)); });
+    await Promise.all(ps);
+  }
+  async zpair(col,dur=260){
+    const x=this.colX(col), a=this.tok(1,x,ROWP), b=this.tok(-1,x,ROWN);
+    a.col=b.col=col; this.P.push(a); this.N.push(b);
+    const cap=el('rect',{x:x-21,y:ROWP-21,width:42,height:ROWN-ROWP+42,rx:21,class:'cap',opacity:0},this.st.L.marks);
+    const z=el('text',{x,y:(ROWP+ROWN)/2+6,class:'capz','text-anchor':'middle',opacity:0},this.st.L.marks); z.textContent='0';
+    this.caps.push(cap,z);
+    await this.all(this.pop(a,dur),this.pop(b,dur),this.tw(dur,k=>{ cap.setAttribute('opacity',k); z.setAttribute('opacity',k); }));
+  }
+  async fadeCaps(){ if(this.caps.length){ await this.fadeOut(this.caps); this.caps=[]; } }
+  box(c0,c1,y,cls){ return el('rect',{x:this.colX(c0)-21,y:y-21,width:this.colX(c1)-this.colX(c0)+42,height:42,rx:21,class:'box '+cls,opacity:0},this.st.L.marks); }
+
+  /* text */
+  eq(line,str){ if(this.eqs[line]) this.eqs[line].el.remove(); this.eqs[line]=rich(this.st.L.eq,CX,line?92:52,str,line?'eq2':'eq'); }
+  rich(x,y,str,cls,anchor){ return rich(this.st.L.eq,x,y,str,cls,anchor); }
+  next(R,dur=650){ const sp=R.groups[R.shown++]; if(!sp) return Promise.resolve(); return this.tw(dur,k=>sp.forEach(s=>s.setAttribute('fill-opacity',k))); }
+  eqNext(line,dur){ return this.next(this.eqs[line],dur); }
+  focus(line,k,to,text){
+    const R=this.eqs[line]; R.nums.forEach((s,i)=>s.classList.toggle('dimmed',k!==null&&i!==k));
+    return k===null||!to?Promise.resolve():this.floatNum(R,k,to,text);
+  }
+  floatNum(R,k,to,text){ return this.floatSpan(R,R.nums[k],to,text); }
+  async floatSpan(R,sp,to,text){
+    const y0=+R.el.getAttribute('y'), fs=R.el.classList.contains('eq')?34:22; let x=CX;
+    try{ const n=sp.getNumberOfChars(); x=(sp.getStartPositionOfChar(0).x+sp.getEndPositionOfChar(n-1).x)/2; }catch(e){}
+    const t=el('text',{x,y:y0,class:'float '+(text?'tz':kind(sp.textContent)),'text-anchor':'middle','font-size':fs,opacity:0},this.st.L.eq);
+    t.textContent=text??sp.textContent;
+    await this.tw(1000,u=>{
+      t.setAttribute('x',lerp(x,to.x,u)); t.setAttribute('y',lerp(y0,to.y,u)); t.setAttribute('font-size',lerp(fs,28,u));
+      t.setAttribute('opacity',.55*(u<.8?Math.min(1,u*6):(1-u)/.2));
+    });
+    t.remove();
+  }
+  floatMinus(s){ const R=this.eqs[0], sp=R.groups[0][0]; return this.all(this.floatSpan(R,sp,this.tokTo(s)),this.floatSpan(R,sp,this.lineTo(1.5*s))); }
+  tokTo(s){ return {x:CX,y:(s>0?ROWP:ROWN)+10}; }
+  lineTo(v=0){ return {x:X(v),y:LY-28}; }
+  async sum(v){
+    const y=(ROWP+ROWN)/2+9, old=this.sumN, ps=[];
+    if(!this.sumEq){
+      this.sumEq=rich(this.st.L.eq,546,y,'=','stepsum','start').el;
+      ps.push(this.fadeIn(this.sumEq,900));
+    }
+    if(old&&old.v===v){
+      // same value again: a slow, soft breath instead of a swap
+      await this.tw(1200,k=>old.R.el.setAttribute('opacity',1-.65*Math.sin(Math.PI*k)));
+      return;
+    }
+    const R=rich(this.st.L.eq,574,y,fmt(v,1),'stepsum','start'); R.el.setAttribute('opacity',0);
+    this.sumN={v,R};
+    ps.push(this.tw(1000,k=>{
+      R.el.setAttribute('opacity',k); R.el.setAttribute('transform',`translate(0 ${8*(1-k)})`);
+      if(old){ old.R.el.setAttribute('opacity',1-k); old.R.el.setAttribute('transform',`translate(0 ${-8*k})`); }
+    }));
+    await Promise.all(ps);
+    if(old) old.R.el.remove();
+  }
+  async swapEq(line,str,dur=700){
+    const R=this.eqs[line]; this.eq(line,str); const N=this.eqs[line];
+    if(R){ N.el.setAttribute('opacity',0); this.st.L.eq.appendChild(R.el); }
+    await this.tw(dur,k=>{ N.el.setAttribute('opacity',k); if(R) R.el.setAttribute('opacity',1-k); });
+    if(R) R.el.remove();
+  }
+  spanX(sp){ try{ const n=sp.getNumberOfChars(); return (sp.getStartPositionOfChar(0).x+sp.getEndPositionOfChar(n-1).x)/2; }catch(e){ return CX; } }
+  async morph(line,str,map){
+    // build the new equation hidden, glide mapped numbers into place, fade the rest
+    const R=this.eqs[line], N=rich(this.st.L.eq,CX,line?92:52,str,line?'eq2':'eq');
+    N.groups.flat().forEach(s=>s.setAttribute('fill-opacity',0));
+    const movers=map.map(([i,j])=>{
+      const from=R.nums[i], to=N.nums[j], x0=this.spanX(from), x1=this.spanX(to);
+      const t=el('text',{x:x0,y:R.el.getAttribute('y'),class:R.el.getAttribute('class'),'text-anchor':'middle'},this.st.L.eq);
+      const s=el('tspan',{class:from.getAttribute('class').replace(' dimmed','')},t); s.textContent=from.textContent;
+      return {t,x0,x1,to};
+    });
+    map.forEach(([i])=>R.nums[i].setAttribute('fill-opacity',0)); this.eqs[line]=N;
+    await this.tw(1100,k=>{ movers.forEach(m=>m.t.setAttribute('x',lerp(m.x0,m.x1,k))); R.el.setAttribute('opacity',Math.max(0,1-k*1.6)); });
+    R.el.remove();
+    const moved=movers.map(m=>m.to);
+    moved.forEach(s=>s.setAttribute('fill-opacity',1)); movers.forEach(m=>m.t.remove());
+    const rest=N.groups[0].filter(s=>!moved.includes(s));
+    await this.tw(800,k=>rest.forEach(s=>s.setAttribute('fill-opacity',k)));
+  }
+  fadeIn(els,dur=300){ els=[].concat(els); els.forEach(e=>e.setAttribute('opacity',0)); return this.tw(dur,k=>els.forEach(e=>e.setAttribute('opacity',k))); }
+  async fadeOut(els,dur=300){ els=[].concat(els); await this.tw(dur,k=>els.forEach(e=>e.setAttribute('opacity',1-k))); els.forEach(e=>e.remove()); }
+}
+
+/* ───────── scenes ───────── */
+
+async function fLine(S){
+  S.line(-8,8,true); S.walker(0); S.n=5; S.eq(0,'0');
+  await S.wait(600);
+  for(let i=1;i<=5;i++){ await S.addTok(1); await S.swapEq(0,String(i),500); }
+  await S.wait(900);
+  await S.all(...[...S.P].map(T=>S.fadeTok(T)), S.slideW(0,600),S.swapEq(0,'0',600)); S.dim();
+  await S.wait(600);
+  for(let i=1;i<=5;i++){ await S.addTok(-1); await S.swapEq(0,M+i,500); }
+  await S.wait(700); S.showAll();
+}
+
+async function fFlip(S){
+  S.base(); S.n=3; S.eq(0,'3');
+  await S.wait(500);
+  const ts=[0,1,2].map(i=>{ const T=S.tok(1,S.colX(i),ROWP); T.col=i; S.P.push(T); return T; });
+  const A=S.mkArc(0,3);
+  await S.all(S.drawArc(A,800,true),...ts.map((T,i)=>S.popAfter(T,i*150)));
+  S.pos=3; S.wcls();
+  await S.wait(800);
+  await S.morph(0,`${M}(3)| = ${M}3`,[[0,0]]); await S.wait(700);
+  await S.floatMinus(1);
+  await S.all(S.rotArc(A,1300,true,1),...ts.map(T=>S.flip(T,1300)));
+  S.pos=-3; S.wcls(); S.wAt(X(-3),LY);
+  await S.eqNext(0); await S.wait(1100);
+  await S.morph(0,`${M}(${M}3)| = 3`,[[1,0]]); await S.wait(700);
+  await S.floatMinus(-1);
+  await S.all(S.rotArc(A,1300,true,-1),...ts.map(T=>S.flip(T,1300)));
+  S.pos=3; S.wcls(); S.wAt(X(3),LY);
+  await S.eqNext(0); await S.pulse();
+}
+
+async function sAdd(S,a,b){
+  const r=a+b, A=Math.abs(a), B=Math.abs(b), sa=Math.sign(a), sb=Math.sign(b);
+  S.base(); S.eq(0,`${fmt(a,1)} + ${fmt(b)}| = ${fmt(r,1)}`);
+  S.n=sa===sb?A+B:Math.max(A,B);
+  await S.wait(500); await S.focus(0,0,S.tokTo(sa));
+  for(let i=0;i<A;i++) await S.addTok(sa);
+  await S.wait(300); await S.sum(a); await S.wait(700);
+  S.dim(); await S.focus(0,1,S.tokTo(sb));
+  for(let i=0;i<B;i++) await S.addTok(sb);
+  await S.wait(300); await S.sum(r); await S.wait(600); S.focus(0,null);
+  if(S.P.length&&S.N.length){ await S.cancelPairs(); await S.wait(200); await S.compact(); await S.sum(r); }
+  await S.wait(300); await S.eqNext(0); await S.pulse();
+}
+
+async function sSub(S,a,b){
+  const r=a-b, A=Math.abs(a), B=Math.abs(b), sa=Math.sign(a), sb=Math.sign(b);
+  S.base();
+  S.eq(0,`${fmt(a,1)} − ${fmt(b)}| = ${fmt(r,1)}`);
+  S.eq(1,`|${fmt(a,1)} + ${fmt(-b)} = ${fmt(r,1)}`);
+  const need=Math.max(0,B-(sa===sb?A:0)); S.n=A+need;
+  await S.wait(500); await S.focus(0,0,S.tokTo(sa));
+  for(let i=0;i<A;i++) await S.addTok(sa);
+  await S.wait(300); await S.sum(a); await S.wait(800); S.dim();
+  if(need){
+    for(let k=0;k<need;k++){ await S.zpair(A+k); await S.wait(160); }
+    await S.wait(300); await S.sum(a); await S.wait(1000);
+  }
+  await S.fadeCaps();
+  await S.focus(0,1,S.tokTo(sb),M+fmt(b));
+  const victims=[...(sb>0?S.P:S.N)].sort((x,y)=>y.col-x.col).slice(0,B);
+  for(const T of victims){ await S.all(S.take(T),S.hop(S.pos-sb,{dur:400})); }
+  await S.wait(350); S.focus(0,null); await S.compact(); await S.sum(r);
+  await S.eqNext(0); await S.pulse(); await S.wait(500); await S.eqNext(1);
+}
+
+async function sMul(S,a,b){
+  const r=a*b, A=Math.abs(a), B=Math.abs(b), sb=Math.sign(b), GAP=.7;
+  const col=(g,i)=>g*(B+GAP)+i, rowY=sb>0?ROWP:ROWN;
+  S.n=A*B+(A-1)*GAP; S.base();
+  S.eq(0,`${fmt(a,1)} · ${fmt(b)}| = ${fmt(r,1)}`);
+  if(a>0){
+    S.eq(1,'|'+Array.from({length:A},(_,g)=>(g?' + ':'')+fmt(b,g===0)).join('|')+`| = ${fmt(r,1)}`);
+    await S.wait(500); await S.focus(0,1,{x:CX,y:rowY+10});
+    for(let g=0;g<A;g++){
+      const bx=S.box(col(g,0),col(g,B-1),rowY,sg(b));
+      const lab=S.rich((S.colX(col(g,0))+S.colX(col(g,B-1)))/2,rowY+44,'|'+(g+1),'glabel','middle');
+      const ps=[];
+      for(let i=0;i<B;i++){ const T=S.tok(sb,S.colX(col(g,i)),rowY); T.col=col(g,i); (sb>0?S.P:S.N).push(T); ps.push(S.popAfter(T,i*90)); }
+      await S.all(...ps,S.fadeIn(bx),S.next(lab),S.hop(S.pos+b,{dur:650}),S.eqNext(1));
+      await S.sum(b*(g+1)); await S.wait(350);
+    }
+    S.focus(0,null); await S.wait(300); await S.all(S.eqNext(1),S.eqNext(0)); await S.pulse();
+  } else {
+    S.eq(1,'|0'+Array.from({length:A},()=>`| − ${fmt(b)}`).join('')+`| = ${fmt(r,1)}`);
+    await S.wait(500); await S.eqNext(1);
+    for(let g=0;g<A;g++) for(let i=0;i<B;i++) await S.zpair(col(g,i),170);
+    await S.wait(300); await S.sum(0); await S.wait(600);
+    await S.focus(0,1,S.lineTo(b/2));
+    const G=await S.ghost(0,b); await S.wait(600);
+    await S.focus(0,0,S.lineTo(0)); await S.rotArc(G,1100); await S.wait(500);
+    await S.fadeCaps();
+    for(let g=0;g<A;g++){
+      const lo=col(g,0)-.01, hi=col(g,B-1)+.01;
+      const victims=(sb>0?S.P:S.N).filter(T=>T.col>=lo&&T.col<=hi);
+      const bx=S.box(col(g,0),col(g,B-1),rowY,sg(b));
+      const lab=S.rich((S.colX(col(g,0))+S.colX(col(g,B-1)))/2,ROWN+44,'|'+M+(g+1),'glabel','middle');
+      await S.all(S.fadeIn(bx),S.next(lab)); await S.wait(250);
+      await S.all(...victims.map(T=>S.take(T)),S.hop(S.pos-b,{below:true,dur:650}),S.fadeOut(bx),S.eqNext(1));
+      await S.sum(-b*(g+1)); await S.wait(300);
+    }
+    await S.wait(300); S.focus(0,null);
+    await S.fadeOut([...S.st.L.eq.querySelectorAll('.glabel')]);
+    await S.compact(); await S.all(S.eqNext(1),S.eqNext(0)); await S.pulse();
+  }
+}
+
+
+async function sDiv(S,a,b){
+  const q=a/b, Q=Math.abs(q);
+  S.base();
+  S.eq(0,`${fmt(a,1)} / ${fmt(b)}| = ${fmt(q,1)}`);
+  S.eq(1,`|${fmt(q,1)} · ${fmt(b)} = ${fmt(a,1)}`);
+  const fg=el('g',{class:'flag '+sg(a)},S.st.L.marks);
+  el('line',{x1:X(a),x2:X(a),y1:LY-4,y2:LY-62},fg); el('path',{d:`M${X(a)} ${LY-62} l18 8 l-18 8z`},fg);
+  const C=el('text',{x:CX,y:196,class:'count tz','text-anchor':'middle'},S.st.L.eq); C.textContent='0';
+  await S.fadeIn(fg,400); await S.wait(300); await S.focus(0,0,S.lineTo(a)); await S.wait(300);
+  await S.focus(0,1,S.lineTo(b/2));
+  let flip=false;
+  if(q<0){
+    const G=await S.ghost(0,b);
+    const cx=el('text',{x:X(b)+(b>0?14:-14),y:LY-40,class:'cross','text-anchor':'middle'},S.st.L.marks); cx.textContent='✕';
+    await S.fadeIn(cx,300); await S.wait(700);
+    await S.fadeOut(cx,250); await S.rotArc(G,1100); await S.wait(450); flip=true;
+  }
+  const step=flip?-b:b;
+  for(let k=1;k<=Q;k++){
+    await S.all(S.hop(S.pos+step,{below:flip,dur:650}),S.mini(k-1,Q,Math.sign(step),flip));
+    C.textContent=fmt(flip?-k:k,1); C.setAttribute('class','count '+(flip?'tn':'tp'));
+    await S.wait(300);
+  }
+  S.focus(0,null); await S.eqNext(0); await S.pulse(); await S.wait(600); await S.eqNext(1);
+}
+
+const SCENES={
+  found:[['−2 −1 0 1 2',fLine],['1 + (−1)',S=>sAdd(S,1,-1)],['3 + (−3)',S=>sAdd(S,3,-3)],['−(−3)',fFlip]],
+  add:[['3 + 2',S=>sAdd(S,3,2)],['3 + (−5)',S=>sAdd(S,3,-5)],['−2 + (−3)',S=>sAdd(S,-2,-3)],['−4 + 6',S=>sAdd(S,-4,6)]],
+  sub:[['5 − 2',S=>sSub(S,5,2)],['2 − 5',S=>sSub(S,2,5)],['2 − (−3)',S=>sSub(S,2,-3)],['−4 − (−1)',S=>sSub(S,-4,-1)]],
+  mul:[['3 · 2',S=>sMul(S,3,2)],['3 · (−2)',S=>sMul(S,3,-2)],['−3 · 2',S=>sMul(S,-3,2)],['−3 · (−2)',S=>sMul(S,-3,-2)]],
+  div:[['6 / 2',S=>sDiv(S,6,2)],['−6 / 2',S=>sDiv(S,-6,2)],['−6 / (−2)',S=>sDiv(S,-6,-2)],['6 / (−2)',S=>sDiv(S,6,-2)]],
+};
+
+let last=null, active=null; const stages=[];
+// while an animation plays, the rest of the page steps back
+let releaseT=null;
+let dropT=null;
+function setFocus(sec){
+  clearTimeout(releaseT); clearTimeout(dropT);
+  const prev=active; active=sec;
+  if(sec){ document.querySelectorAll('.sec.active').forEach(x=>{ if(x!==sec) x.classList.remove('active'); }); sec.classList.add('active'); }
+  // the stage that just played stays on top of the dimmer until the dimmer has faded away
+  else if(prev) dropT=setTimeout(()=>prev.classList.remove('active'),2100);
+  document.body.classList.toggle('focusing',!!sec);
+}
+// space bar pauses / resumes the animation that was started last
+document.addEventListener('keydown',e=>{
+  if(e.code!=='Space'||!last||e.target.closest('button,input,textarea')) return;
+  e.preventDefault(); last.paused?last.resume():last.pause(); stages.forEach(q=>q.ppShow());
+});
+const ICO_PAUSE='<svg width="16" height="18" viewBox="0 0 18 20" aria-hidden="true"><rect x="2" y="2" width="5" height="16" rx="1.5" fill="currentColor"/><rect x="11" y="2" width="5" height="16" rx="1.5" fill="currentColor"/></svg>';
+const ICO_PLAY='<svg width="16" height="18" viewBox="0 0 18 20" aria-hidden="true"><path d="M3 2.5 L16 10 L3 17.5 Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+
+document.querySelectorAll('[data-scene]').forEach(sec=>{
+  const key=sec.dataset.scene, list=SCENES[key], st=new Stage(sec.querySelector('svg'));
+  const bar=sec.querySelector(".exs"), btns=[], rep=sec.querySelector(".replay"); let cur=null;
+  const pp=document.createElement('button'); pp.type='button'; pp.className='replay pp'; rep.before(pp);
+  const ppShow=()=>{ pp.innerHTML=st.paused?ICO_PLAY:ICO_PAUSE; pp.setAttribute('aria-label',st.paused?'▶':'❚❚'); pp.setAttribute('aria-pressed',st.paused); };
+  pp.addEventListener('click',()=>{ st.paused?st.resume():st.pause(); ppShow(); last=st; });
+  st.onplay=()=>{ last=st; setTimeout(ppShow); setFocus(sec); };
+  st.onend=()=>{ clearTimeout(releaseT); releaseT=setTimeout(()=>{ if(active===sec) setFocus(null); },1300); };
+  stages.push({st,ppShow});
+  rep.hidden=true; pp.hidden=true; // stages stay empty until the viewer picks an example
+  const select=i=>{ cur=i; btns.forEach((b,j)=>{ b.classList.toggle('on',i===j); b.setAttribute('aria-pressed',i===j); }); };
+  list.forEach(([label,fn],i)=>{
+    const b=document.createElement('button'); b.type='button'; b.id=`ex-${key}-${i}`; b.setAttribute('aria-label',label);
+    b.innerHTML=(label.match(RX)||[]).map(w=>`<span class="${kind(w)}">${w}</span>`).join('');
+    b.addEventListener("click",()=>{ select(i); rep.hidden=false; pp.hidden=false; st.play(fn); });
+    bar.appendChild(b); btns.push(b);
+  });
+  rep.addEventListener('click',()=>{ if(cur!==null) st.play(list[cur][1]); });
+});
+</script>
+
+</html>
