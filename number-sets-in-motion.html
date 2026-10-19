@@ -109,7 +109,7 @@ svg text{font-family:var(--font);font-weight:600}
 
 <script>
 const NS='http://www.w3.org/2000/svg', CANCEL=Symbol('cancel');
-const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const RM=false;
 const CX=360, CW=.62;
 const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 const lerp=(a,b,t)=>a+(b-a)*t;
