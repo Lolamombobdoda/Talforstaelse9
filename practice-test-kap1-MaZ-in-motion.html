@@ -1,0 +1,2262 @@
+<!doctype html>
+<html lang="zxx">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}.home{align-self:flex-start;margin-bottom:-24px;font:600 14px/1 var(--font);padding:9px 14px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);text-decoration:none;position:relative;transition:opacity 2s,border-color .3s}
+.home:hover{border-color:var(--mute)}
+.home:focus-visible{outline:3px solid var(--cB);outline-offset:2px}
+body.focusing .home{opacity:.4;transition-duration:.9s}
+</style>
+<title>Practice Test in Motion</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Azeret+Mono:ital,wght@0,400;0,600;0,800;1,600;1,800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Math&text=%E2%84%95%E2%84%A4%E2%84%9A%E2%84%9D%F0%9D%95%8E%E2%8A%82%CF%80&display=swap">
+<style>
+/* Layout: one stage per problem of the practice test, numbered in the margin; problems with parts a, b, c have one button per part. Each stage uses the pictures and colours of the page the idea comes from. */
+:root{
+  --bg:#EEF1F4; --panel:#FFFFFF; --ink:#172031; --mute:#7D879A; --rule:#D3D9E2; --dim:rgba(16,22,34,.16);
+  --cA:#DD5F0B; --cB:#2357D4; --cF:#0E8A5A; --cO:#7A3FD8; --cR:#D42A2A; --tokink:#FFFFFF;
+  --font:'Azeret Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --math:'Noto Sans Math','Cambria Math','STIX Two Math','Segoe UI Symbol',serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1015; --panel:#161A21; --ink:#E6E9EF; --mute:#77839A; --rule:#2B323E; --dim:rgba(0,0,0,.45);
+  --cA:#FF8A42; --cB:#6E97FF; --cF:#34C98A; --cO:#B08CFF; --cR:#FF6B6B; --tokink:#161A21; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1015; --panel:#161A21; --ink:#E6E9EF; --mute:#77839A; --rule:#2B323E; --dim:rgba(0,0,0,.45);
+  --cA:#FF8A42; --cB:#6E97FF; --cF:#34C98A; --cO:#B08CFF; --cR:#FF6B6B; --tokink:#161A21; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--font)}
+.wrap{max-width:936px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:36px 72px;display:flex;flex-direction:column;gap:44px}
+.top{display:flex;flex-direction:column;align-items:center;gap:18px}
+.titles{text-align:center}
+.titles h1{font:800 clamp(28px,5.5vw,46px)/1.1 var(--font);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.titles .by{margin:8px 0 0;font-size:15px;color:var(--mute);letter-spacing:.02em}
+.dimmer{position:fixed;inset:0;background:var(--dim);opacity:0;pointer-events:none;transition:opacity 2s;z-index:1}
+body.focusing .dimmer{opacity:1}
+.top,.sec{position:relative;transition:opacity 2s}
+/* dimming comes in quickly, and lifts slowly a moment after the animation ends */
+body.focusing .dimmer,body.focusing .top,body.focusing .sec,body.focusing .note{transition-duration:.9s}
+body.focusing .top,body.focusing .sec:not(.active){opacity:.4}
+.sec.active{z-index:2}
+.ops{display:flex;justify-content:center;max-width:100%}
+.ops svg{max-width:100%;height:auto}
+.test{margin:0;font:600 clamp(17px,3vw,21px)/1.4 var(--font);text-align:center;text-wrap:balance}
+.test a{color:var(--ink);text-decoration-color:var(--mute);text-underline-offset:4px}
+.test a:hover{text-decoration-color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px 40px}
+.dmsw{display:inline-flex;gap:8px}
+.ask{display:inline-grid;grid-template-columns:auto auto;column-gap:8px;row-gap:5px;justify-items:center}
+.ask::before{content:'?';grid-column:1/-1;font:600 17px/1 var(--font);color:var(--ink)}
+.dmsw button{font:600 15px/1 var(--font);padding:6px 10px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center}
+.dmsw button:hover{border-color:var(--mute)}
+.dmsw button.on{border:2px solid var(--ink)}
+.sec{display:grid;grid-template-columns:152px minmax(0,1fr);gap:16px;align-items:start}
+.glyph{display:flex;justify-content:center;padding-top:14px}
+.glyph svg{height:auto}
+@media (max-width:640px){.sec{grid-template-columns:minmax(0,1fr)}.glyph{justify-content:flex-start;padding-top:0}}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:16px;overflow:hidden;min-width:0}
+svg.stage{display:block;width:100%;height:auto}
+.bar,.methods{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-top:1px solid var(--rule);align-items:center}
+.methods{justify-content:center;gap:14px;background:var(--bg)}
+.exs{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+.card button{font:600 15px/1 var(--font);padding:6px 10px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.card button:hover{border-color:var(--mute)}
+.card button.on{border:2px solid var(--ink)}
+.methods button{padding:8px 14px;border-radius:16px}
+.bar .replay{font-size:22px;padding:8px 14px;align-self:stretch;min-width:52px}
+.bar .pp{color:var(--ink)}
+.bar .pp[aria-pressed="true"]{border:2px solid var(--cF);color:var(--cF)}
+button:focus-visible{outline:3px solid var(--cB);outline-offset:2px}
+.ic{display:block}
+
+/* expressions */
+svg text{font-family:var(--font);font-weight:600}
+.lf{fill:var(--ink);transition:fill .6s}
+.lf.it{font-style:italic}
+.lbar{stroke:var(--ink);stroke-linecap:round;transition:stroke .6s}
+.lpath{fill:none;stroke:var(--ink);stroke-linecap:round;stroke-linejoin:round;transition:stroke .6s}
+.lf.cA{fill:var(--cA)} .lf.cB{fill:var(--cB)} .lf.cF{fill:var(--cF)} .lf.cO{fill:var(--cO)} .lf.cR{fill:var(--cR)} .lf.mut,.lf.cX{fill:var(--mute)}
+.lbar.cA,.lpath.cA{stroke:var(--cA)} .lbar.cB,.lpath.cB{stroke:var(--cB)} .lbar.cF,.lpath.cF{stroke:var(--cF)} .lbar.cO,.lpath.cO{stroke:var(--cO)}
+.lf.dim{fill:var(--rule)} .lbar.dim,.lpath.dim{stroke:var(--rule)}
+.lf.ds,.lf.pi{font-family:var(--math);font-weight:400}
+.lf.pi{transform-box:fill-box;transform-origin:50% 100%;scale:1.3}
+.lf.bold{font-weight:800}
+
+/* fraction bars (from the fractions page) */
+.mbg{fill:var(--panel)}
+.mout{fill:none;stroke:var(--ink);stroke-width:2;transition:stroke .9s,stroke-width .9s}
+.mline{stroke:var(--ink);stroke-width:1.2;stroke-opacity:.45;transition:stroke .9s,stroke-width .9s,stroke-opacity .9s}
+.mline.hot{stroke:var(--cF);stroke-width:3.5;stroke-opacity:1}
+.mout.hot{stroke:var(--cF);stroke-width:3.5}
+.cell{transition:fill .8s}
+.cell.cA{fill:var(--cA)} .cell.cB{fill:var(--cB)} .cell.cO{fill:var(--cO)}
+.grpF{fill:none;stroke:var(--cF);stroke-width:2.5;stroke-dasharray:7 5}
+.soft.cA{fill:var(--cA);fill-opacity:.28} .soft.cB{fill:var(--cB);fill-opacity:.28}
+.ghostc{fill-opacity:.45}
+.grp{fill:none;stroke:var(--cB);stroke-width:2.5;stroke-dasharray:7 5}
+.grp2{fill:none;stroke:var(--mute);stroke-width:1.5;stroke-dasharray:4 5}
+.match{fill:none;stroke:var(--cF);stroke-width:2.5}
+.ghostT{opacity:.25}
+
+/* number sets (from the number-sets page) */
+.ov{fill:var(--ink);fill-opacity:.035;stroke:var(--mute);stroke-width:1.6;transition:stroke .6s,stroke-width .6s}
+.ov.hi{stroke:var(--cF);stroke-width:3.2}
+.slab{font-family:var(--math);font-weight:400;fill:var(--ink)}
+.clet{font-family:var(--math);font-weight:400;fill:var(--ink)}
+.car{fill:none;stroke:var(--mute);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .6s}
+.car.act{stroke:var(--cF)}
+.cic .lf{fill:var(--mute)} .cic .lbar{stroke:var(--mute)}
+.cic.act .lf{fill:var(--cF)} .cic.act .lbar{stroke:var(--cF)}
+.ring{fill:none;stroke:var(--cF);stroke-width:2.6}
+.ul{fill:none;stroke:var(--cF);stroke-width:3;stroke-linecap:round}
+.mk{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.mk.ok{stroke:var(--cF)} .mk.no{stroke:var(--mute)}
+
+/* number line and tokens (from the negative-numbers page): orange filled = +1, blue ring = −1 */
+.sg{--pos:var(--cA);--neg:var(--cB)}
+.sg tspan.sl{font-size:1.45em;baseline-shift:-.12em} .sg span.sl{font-size:1.4em;line-height:0;vertical-align:-.1em}
+.sg .tp{fill:var(--pos);color:var(--pos)} .sg .tn{fill:var(--neg);color:var(--neg)} .sg .tz,.sg .to{fill:var(--ink);color:var(--ink)}
+.sg .axis{stroke:var(--ink);stroke-width:2}
+.sg .axhead{fill:var(--ink)}
+.sg .tick{stroke:var(--mute);stroke-width:1.5}
+.sg .tick0{stroke:var(--ink);stroke-width:2.5}
+.sg .tick.hot{stroke:var(--cF);stroke-width:3.5}
+.sg .lab{font-size:15px;font-weight:600;paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round;transition:opacity .3s}
+.sg .lab.p{fill:var(--pos)} .sg .lab.n{fill:var(--neg)} .sg .lab.z{fill:var(--ink);font-weight:800}
+.sg .walker circle{fill:var(--ink);stroke:var(--panel);stroke-width:3}
+.sg .walker.p circle{fill:var(--pos)} .sg .walker.n circle{fill:var(--neg)}
+.sg .arc{transition:opacity .4s}
+.sg .arc .a{fill:none;stroke-width:3;stroke-linecap:round}
+.sg .arc.p .a{stroke:var(--pos)} .sg .arc.p .h{fill:var(--pos)}
+.sg .arc.n .a{stroke:var(--neg)} .sg .arc.n .h{fill:var(--neg)}
+.sg .arc.ghost .a{stroke-dasharray:6 6}
+.sg .mini .a{stroke-width:2.5}
+.sg .tok.p circle{fill:var(--pos)}
+.sg .tok.n circle{fill:var(--panel);stroke:var(--neg);stroke-width:3}
+.sg .tok .sym{fill:none;stroke-width:3;stroke-linecap:round}
+.sg .tok.p .sym{stroke:var(--tokink)} .sg .tok.n .sym{stroke:var(--neg)}
+.sg .zero{font-weight:800;fill:var(--ink)}
+.sg .cap{fill:none;stroke:var(--mute);stroke-width:1.5;stroke-dasharray:3 4}
+.sg .capz{font-size:15px;font-weight:800;fill:var(--mute)}
+.sg .box{fill:none;stroke-width:2;stroke-dasharray:4 5}
+.sg .box.p{stroke:var(--pos)} .sg .box.n{stroke:var(--neg)}
+.sg .eq{font-size:34px;font-weight:600}
+.sg .eq2{font-size:22px;font-weight:600}
+.sg .eq .dimmed,.sg .eq2 .dimmed{fill:var(--rule)}
+.sg .count{font-size:56px;font-weight:800}
+.sg .glabel{font-size:16px;font-weight:800}
+.sg .rdot{stroke:var(--panel);stroke-width:2}
+.sg .rdot.p{fill:var(--pos)} .sg .rdot.n{fill:var(--neg)} .sg .rdot.z{fill:var(--ink)}
+.sg .flag line{stroke-width:2} .sg .flag.p line{stroke:var(--pos)} .sg .flag.p path{fill:var(--pos)}
+.sg .flag.n line{stroke:var(--neg)} .sg .flag.n path{fill:var(--neg)}
+.sg .float{font-weight:800}
+.sg .stepsum{font-size:26px;font-weight:800}
+.sg .cross{font-size:22px;font-weight:800;fill:var(--mute)}
+
+.note{position:relative;transition:opacity 2s;max-width:62ch;margin:0 auto;text-align:center;font-size:13px;line-height:1.6;color:var(--mute)}
+.note p{margin:0}
+body.focusing .note{opacity:.4}
+</style>
+
+<div class="wrap">
+  <a class="home" href="index.html" lang="sv">← Tillbaks till menyn</a>
+  <div class="dimmer" aria-hidden="true"></div>
+  <header class="top">
+    <div class="titles"><h1>Wordless explanations</h1><p class="by">by Niklas Jonsson Kaino</p></div>
+    <p class="test" lang="sv"><a href="https://www.matematikxyz.com/larare/ewExternalFiles/Z%20O%CC%88vningsprov%20Kap%201%20ver%201%20v-2.pdf" target="_blank" rel="noopener">Övningsprov 1, kapitel 1 - Matematik Z</a></p>
+    <div class="legend"><span class="dmsw ask" id="dmsw"></span></div>
+  </header>
+  <section class="sec" data-sec="p1"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 690"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay pp" type="button" hidden></button><button class="replay rs" type="button" aria-label="↺" hidden>↺</button></div></div></section>
+  <section class="sec" data-sec="p2"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 330"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="p3"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 450"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div>
+      <div class="methods" hidden></div></div></section>
+  <section class="sec sg" data-sec="p4"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 380"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec sg" data-sec="p5"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="-40 0 720 450"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="p6"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 460"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="p8"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 520"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div>
+      <div class="methods" hidden></div></div></section>
+  <section class="sec" data-sec="p9"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 370"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="p10"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 450"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="p11"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 420"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <footer class="note">
+    <p>The dot (·) is used for multiplication instead of the cross (×), so it can't be confused with the variable x.</p>
+    <p>The slash (/) is used for division instead of the obelus (÷), so it can't be confused with the plus sign (+).</p>
+  </footer>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg', CANCEL=Symbol('cancel');
+const RM=false;   // animations always play in full, also with reduced motion turned on
+const CX=360, CW=.62;
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=t=>Math.max(0,Math.min(1,t));
+function el(tag,attrs,parent){ const e=document.createElementNS(NS,tag); if(attrs) for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+
+/* ───────── expression trees ───────── */
+const num=(t,key,cls)=>({t:'n',text:String(t),key,cls:cls||''});
+const opr=(t,key,cls)=>({t:'o',text:t,key,cls:cls||''});
+const cellN=(w,ch)=>({t:'c',w,ch});
+const row=(...ch)=>({t:'r',ch:ch.flat(9).filter(Boolean)});
+function frc(a,b,key,cls){ cls=cls||''; if(typeof a!=='object') a=num(a,key+'n',cls); if(typeof b!=='object') b=num(b,key+'d',cls); return {t:'f',nu:a,de:b,key,cls}; }
+const pw=(b,e)=>({t:'p',b,e});                                 // power: base with a raised exponent
+const brc=(c,lab,dir,key,cls)=>({t:'B',c,lab,dir,key,cls:cls||''}); // under- ('u') or overbrace ('o') with a count
+const par=(c,key)=>({t:'P',c,key});                            // brackets that grow to fit
+const strike=n=>({...n,strike:true});
+// the decimal mark (point or comma) is the viewer's choice
+let DM=','; try{ DM=localStorage.getItem('wl-decimal-mark')||','; }catch(e){}   // the comma unless the viewer has picked the point
+if(DM!=='.'&&DM!==',') DM=',';
+const dmk=(key,cls)=>({t:'d',key,cls:cls||''});   // the decimal mark, narrow so the digits stay close
+const arr=key=>({t:'A',key});
+const rt=(c,key,cls)=>({t:'R',c,key,cls:cls??'cF'});   // a root sign that grows to fit
+const eqQ=key=>({t:'E',key});                         // "=" with a question mark
+const isV=x=>typeof x==='string'&&/^[a-z]$/.test(x);
+const V=(t,key,cls)=>num(t,key,((cls||'')+' it').trim());
+const N=(x,key,cls)=>isV(x)?V(x,key,cls):num(x,key,cls);
+const X=(e,key,cls)=>typeof e==='object'?e:N(e,key,cls);
+
+const ks=k=>k!=null?k:undefined;
+function shift(l,dx,dy){ const q={...l};
+  if(q.kind==='p'){ q.x1+=dx; q.x2+=dx; q.y1+=dy; q.y2+=dy; }
+  else { if(q.kind==='b'){ q.x1+=dx; q.x2+=dx; } else q.x+=dx; q.y+=dy; }
+  return q; }
+function lay(node,s){
+  if(node.t==='R'){
+    const C=lay(node.c,s), lw=.62*s, top=-(Math.max(C.asc,.74*s)+.14*s), bot=Math.max(C.desc,.06*s)+.1*s, x2=lw+C.w+.08*s;
+    return {w:x2+.06*s,asc:-top+.06*s,desc:bot,leaves:[...C.leaves.map(l=>shift(l,lw,0)),{key:node.key,kind:'p',shape:'rt',cls:node.cls,x1:.04*s,x2,y1:top,y2:bot,s}]};
+  }
+  if(node.t==='E'){   // "=" with a small question mark above it: not shown yet
+    const L=lay(opr('=',node.key),s), qs=.6*s;
+    L.leaves.push({key:node.key+'?',kind:'t',text:'?',cls:'',x:L.w/2,y:-.86*s,s:qs});
+    return {...L,asc:.86*s+.74*qs};
+  }
+  if(node.t==='d'){ const w=.36*s; return {w,asc:.74*s,desc:.16*s,leaves:[{key:node.key,kind:'t',text:DM,cls:node.cls,x:w/2,y:0,s}]}; }
+  if(node.t==='A'){ const w=1.1*s, y=-.3*s; return {w,asc:.5*s,desc:0,leaves:[{key:node.key,kind:'p',shape:'ar',cls:'',x1:.15*s,x2:w-.15*s,y1:y,y2:y,s}]}; }
+  if(node.t==='o'&&node.text==='/'){   // division: a large slash
+    const k=1.55, tw=CW*k*s, pad=.1*s, sh=.2*s;
+    return {w:tw+2*pad,asc:.74*k*s-sh,desc:sh+.06*s,leaves:[{key:node.key,kind:'t',text:'/',cls:node.cls,x:pad+tw/2,y:sh,s:k*s}]};
+  }
+  if(node.t==='n'||node.t==='o'){
+    const ell=node.text==='⋯', tw=(ell?1.3:[...node.text].length)*CW*s, pad=node.t==='o'?((node.text==='·'||ell)?.14:.34)*s:0;
+    const leaves=[{key:node.key,kind:'t',text:node.text,cls:node.cls,x:pad+tw/2,y:0,s}];
+    if(node.strike) leaves.push({key:node.key!=null?node.key+'.x':undefined,kind:'p',shape:'x',cls:'',x1:pad-.14*s,x2:pad+tw+.14*s,y1:.12*s,y2:-.84*s,s});
+    return {w:tw+2*pad,asc:.74*s,desc:.06*s,leaves};
+  }
+  if(node.t==='c'){
+    if(!node.ch) return {w:node.w,asc:0,desc:0,leaves:[]};
+    const L=lay(node.ch,s); return {w:node.w,asc:L.asc,desc:L.desc,leaves:L.leaves.map(l=>shift(l,(node.w-L.w)/2,0))};
+  }
+  if(node.t==='r'){
+    let x=0,asc=0,desc=0; const leaves=[];
+    for(const ch of node.ch){ const L=lay(ch,s); for(const l of L.leaves) leaves.push(shift(l,x,0)); x+=L.w; asc=Math.max(asc,L.asc); desc=Math.max(desc,L.desc); }
+    return {w:x,asc,desc,leaves};
+  }
+  if(node.t==='p'){
+    const B=lay(node.b,s), es=.62*s, E=lay(node.e,es), rise=Math.max(.4*s,B.asc-.5*es), gx=.04*s;
+    return {w:B.w+gx+E.w+.05*s,asc:Math.max(B.asc,rise+E.asc),desc:Math.max(B.desc,E.desc-rise),
+      leaves:[...B.leaves,...E.leaves.map(l=>shift(l,B.w+gx,-rise))]};
+  }
+  if(node.t==='B'){
+    const C=lay(node.c,s), ls=Math.max(.62*s,16), Lb=lay(node.lab,ls), w=Math.max(C.w,Lb.w), cx=(w-C.w)/2, lx=(w-Lb.w)/2;
+    const g=.14*s, bh=.3*s, ins=.05*s, leaves=C.leaves.map(l=>shift(l,cx,0)), key=node.key!=null?node.key+'.br':undefined;
+    if(node.dir==='u'){
+      const y1=C.desc+g, y2=y1+bh, yl=y2+.14*s+Lb.asc;
+      leaves.push({key,kind:'p',shape:'br',cls:node.cls,x1:cx+ins,x2:cx+C.w-ins,y1,y2,s});
+      Lb.leaves.forEach(l=>leaves.push(shift(l,lx,yl)));
+      return {w,asc:C.asc,desc:yl+Lb.desc,leaves};
+    }
+    const y1=-C.asc-g, y2=y1-bh, yl=y2-.14*s-Lb.desc;
+    leaves.push({key,kind:'p',shape:'br',cls:node.cls,x1:cx+ins,x2:cx+C.w-ins,y1,y2,s});
+    Lb.leaves.forEach(l=>leaves.push(shift(l,lx,yl)));
+    return {w,asc:-yl+Lb.asc,desc:C.desc,leaves};
+  }
+  if(node.t==='P'){
+    const C=lay(node.c,s), pw_=.36*s, asc=Math.max(C.asc,.74*s)+.1*s, desc=Math.max(C.desc,.06*s)+.16*s, kk=node.key;
+    const leaves=C.leaves.map(l=>shift(l,pw_,0));
+    leaves.push({key:kk!=null?kk+'.pl':undefined,kind:'p',shape:'pl',cls:'',x1:.05*s,x2:pw_-.02*s,y1:-asc,y2:desc,s});
+    leaves.push({key:kk!=null?kk+'.pr':undefined,kind:'p',shape:'pr',cls:'',x1:pw_+C.w+.02*s,x2:2*pw_+C.w-.05*s,y1:-asc,y2:desc,s});
+    return {w:C.w+2*pw_,asc,desc,leaves};
+  }
+  const T=lay(node.nu,s), B=lay(node.de,s), pad=.24*s, gap=(node.gap??.2)*s, ax=.3*s, w=Math.max(T.w,B.w)+2*pad;
+  const yT=-ax-gap-T.desc, yB=-ax+gap+B.asc, leaves=[];
+  for(const l of T.leaves) leaves.push(shift(l,(w-T.w)/2,yT));
+  for(const l of B.leaves) leaves.push(shift(l,(w-B.w)/2,yB));
+  leaves.push({key:node.key!=null?node.key+'.bar':undefined,kind:'b',cls:node.cls,x1:pad*.4,x2:w-pad*.4,y:-ax,s});
+  return {w,asc:-yT+T.asc,desc:yB+B.desc,leaves};
+}
+function pathD(l){
+  const {x1,x2,y1,y2}=l, ym=(y1+y2)/2;
+  if(l.shape==='x') return `M${x1} ${y1}L${x2} ${y2}`;
+  if(l.shape==='rt'){ const s=l.s; return `M${x1} ${y2-.4*s}L${x1+.13*s} ${y2-.48*s}L${x1+.3*s} ${y2}L${x1+.5*s} ${y1}L${x2} ${y1}`; }
+  if(l.shape==='ar'){ const h=.18*l.s; return `M${x1} ${y1}L${x2} ${y1}M${x2-h} ${y1-h}L${x2} ${y1}L${x2-h} ${y1+h}`; }
+  if(l.shape==='pl') return `M${x2} ${y1}Q${2*x1-x2} ${ym} ${x2} ${y2}`;
+  if(l.shape==='pr') return `M${x1} ${y1}Q${2*x2-x1} ${ym} ${x1} ${y2}`;
+  const xm=(x1+x2)/2, q=Math.min(Math.abs(y2-y1)*.9,(x2-x1)/4);
+  return `M${x1} ${y1}Q${x1} ${ym} ${x1+q} ${ym}L${xm-q} ${ym}Q${xm} ${ym} ${xm} ${y2}Q${xm} ${ym} ${xm+q} ${ym}L${x2-q} ${ym}Q${x2} ${ym} ${x2} ${y1}`;
+}
+const klassOf=l=>(l.kind==='t'?'lf ':l.kind==='b'?'lbar ':'lpath ')+l.cls;
+function mkLeaf(parent,l){
+  const e=el(l.kind==='t'?'text':l.kind==='b'?'line':'path',{class:klassOf(l)},parent);
+  if(l.kind==='t'){ e.setAttribute('text-anchor','middle'); e.textContent=l.text; }
+  setLeaf(e,l); return e;
+}
+function setLeaf(e,l){
+  if(l.kind==='t'){ e.setAttribute('x',l.x); e.setAttribute('y',l.y); e.setAttribute('font-size',l.s); }
+  else if(l.kind==='b'){ e.setAttribute('x1',l.x1); e.setAttribute('x2',l.x2); e.setAttribute('y1',l.y); e.setAttribute('y2',l.y); e.setAttribute('stroke-width',Math.max(1.6,l.s*.07)); }
+  else { e.setAttribute('d',pathD(l)); e.setAttribute('stroke-width',Math.max(1.6,l.s*(l.shape==='br'?.06:.075))); }
+}
+function mixLeaf(a,b,t,dx,dy){
+  const q={...b};
+  if(b.kind==='t'){ q.x=lerp(a.x,b.x,t)+(dx||0); q.y=lerp(a.y,b.y,t)+(dy||0); q.s=lerp(a.s,b.s,t); }
+  else if(b.kind==='b'){ q.x1=lerp(a.x1,b.x1,t)+(dx||0); q.x2=lerp(a.x2,b.x2,t)+(dx||0); q.y=lerp(a.y,b.y,t)+(dy||0); }
+  else { q.x1=lerp(a.x1,b.x1,t)+(dx||0); q.x2=lerp(a.x2,b.x2,t)+(dx||0); q.y1=lerp(a.y1,b.y1,t)+(dy||0); q.y2=lerp(a.y2,b.y2,t)+(dy||0); q.s=lerp(a.s,b.s,t); }
+  return q;
+}
+const sameLeaf=(a,b)=>a.kind==='t'?(a.x===b.x&&a.y===b.y&&a.s===b.s):a.kind==='b'?(a.x1===b.x1&&a.x2===b.x2&&a.y===b.y):(a.x1===b.x1&&a.x2===b.x2&&a.y1===b.y1&&a.y2===b.y2);
+const mid=l=>l.kind==='t'?[l.x,l.y-.32*l.s]:l.kind==='b'?[(l.x1+l.x2)/2,l.y]:[(l.x1+l.x2)/2,(l.y1+l.y2)/2];
+
+/* products:  a · a · a  or  a · a · ⋯ · a · a  (ids ending in 'e' are the dots ⋯) */
+const isE=id=>id.endsWith('e');
+const SL=c=>typeof c==='number'?[...Array(c)].map((_,i)=>String(i)):['0','1','e','3','4'];
+function prod(P,ids,fac,sep){ const out=[]; ids.forEach((id,i)=>{ if(i) out.push(sep?sep(ids[i-1]):opr('·',P+'m'+ids[i-1])); out.push(isE(id)?opr('⋯',P+id):fac(id)); }); return row(out); }
+const W=(node,s)=>lay(node,s).w;
+const ph=(node,s)=>cellN(W(node,s));
+const cps=(P,ids,src)=>Object.fromEntries(ids.filter(i=>!isE(i)).map(i=>[P+i,src]));
+// numerator and denominator padded on the left to one width, so matching factors stand straight above each other at the right
+const G=f=>({...f,gap:.42});   // roomier fraction for long rows of factors
+function fracL(T,B,key,s){ const a=W(T,s), b=W(B,s); return G(frc(row(a<b?cellN(b-a):null,T),row(b<a?cellN(a-b):null,B),key)); }
+
+/* ───────── stage + animation context ───────── */
+class Stage{
+  constructor(svg){ this.svg=svg; this.gen=0; this.introDone=false; this.acc=0; this.pausedAt=null; }
+  now(){ return (this.pausedAt??performance.now())-this.acc; }
+  pause(){ if(this.pausedAt==null) this.pausedAt=performance.now(); }
+  resume(){ if(this.pausedAt!=null){ this.acc+=performance.now()-this.pausedAt; this.pausedAt=null; } }
+  get paused(){ return this.pausedAt!=null; }
+  play(script,keep,focus){
+    this.resume(); this.onplay&&this.onplay(!!focus);
+    const gen=++this.gen; if(!keep) this.introDone=false; this.instant=false; this.svg.textContent='';
+    this.L={}; for(const k of ['mbg','mcell','mfg','marks','eq','fx']) this.L[k]=el('g',{},this.svg);
+    return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
+      .finally(()=>{ if(this.gen===gen&&focus&&this.onend) this.onend(); });
+  }
+}
+class Ctx{
+  constructor(st,gen){ this.st=st; this.gen=gen; this.cur=new Map(); this.lines={}; }
+  /* everything runs on the stage clock, which stands still while paused */
+  run(d,fn,raw){
+    const st=this.st, gen=this.gen;
+    return new Promise((res,rej)=>{
+      if(st.gen!==gen) return rej(CANCEL);
+      if(d<=0){ fn&&fn(1); return res(); }
+      const t0=st.now();
+      const step=()=>{ if(st.gen!==gen) return rej(CANCEL); const t=Math.min(1,(st.now()-t0)/d); fn&&fn(raw?t:ease(t)); t<1?requestAnimationFrame(step):res(); };
+      requestAnimationFrame(step);
+    });
+  }
+  tw(dur,fn,raw){ return this.run((this.st.instant||RM)?0:dur,fn,raw); }
+  wait(ms){ return this.run(this.st.instant?0:ms,null); }
+  /* swell up, give a small playful wiggle, then settle back */
+  wiggle(keys,dur=1400){
+    const items=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!items.length) return Promise.resolve();
+    const ps=items.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), ys=ps.map(p=>p[1]);
+    const cx=(Math.min(...xs)+Math.max(...xs))/2, cy=(Math.min(...ys)+Math.max(...ys))/2;
+    return this.tw(dur,t=>{
+      const k=1+.09*Math.sin(Math.PI*t), a=4*Math.sin(4*Math.PI*t)*Math.sin(Math.PI*t);
+      items.forEach(c=>c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) rotate(${a}) scale(${k}) translate(${-cx} ${-cy})`));
+    });
+  }
+  /* grow briefly and glow a little, then settle back */
+  glow(key,dur=1000){
+    const c=this.cur.get(key); if(!c) return Promise.resolve(); const [cx,cy]=mid(c.spec);
+    return this.tw(dur,t=>{ const p=Math.sin(Math.PI*t), k=1+.6*p;
+      c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`);
+      c.el.style.filter=t>=1?'':`drop-shadow(0 0 ${6*p}px var(--cF))`; });
+  }
+  all(...ps){ return Promise.all(ps); }
+  /* a small green 10 jumps in an arc from one place to another */
+  flyTen(from,to,s,dur=1300){
+    const e=mkLeaf(this.st.L.fx,{kind:'t',text:'10',cls:'cF',x:from[0],y:from[1],s:.5*s}), h=Math.max(.9*s,Math.abs(to[0]-from[0])*.3);
+    e.setAttribute('opacity',0);
+    return this.tw(dur,t=>{ const x=lerp(from[0],to[0],t), y=lerp(from[1],to[1],t)-h*Math.sin(Math.PI*t);
+      e.setAttribute('x',x); e.setAttribute('y',y+.16*s); e.setAttribute('opacity',Math.min(clamp(t/.2),1-clamp((t-.75)/.25)));
+      if(t>=1) e.remove(); });
+  }
+  /* a part that breaks a rule pulses gently between ink and red, then settles back */
+  pulseRed(keys,dur=2600){
+    const cs=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!cs.length) return Promise.resolve();
+    const ps=cs.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), cx=(Math.min(...xs)+Math.max(...xs))/2, cy=ps[0][1];
+    return this.tw(dur,t=>{ const p=Math.sin(Math.PI*((t*2)%1)), k=1+.12*p;
+      cs.forEach(c=>{ c.el.style.fill=t>=1?'':`color-mix(in srgb, var(--cR) ${Math.round(p*100)}%, var(--ink))`;
+        c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`); }); },true);
+  }
+  dimK(keys,on){ keys.forEach(k=>{ const c=this.cur.get(k); if(c) c.el.classList.toggle('dim',on); }); }
+  cfg(line,c){ this.lines[line]=c; }
+
+  async begin(tree,c){
+    const def={cx:CX,y:92,s:34}, intro=this.st.introDone; this.st.introDone=false;
+    if(intro){
+      this.cfg('main',def); const sv=this.st.instant; this.st.instant=true; await this.show('main',tree); this.st.instant=sv;
+      if(c){ this.cfg('main',c); await this.show('main',tree,{dur:1200}); }
+      await this.wait(500);
+    } else { this.cfg('main',c||def); await this.show('main',tree); await this.wait(900); }
+  }
+
+  /* morph one line of math into a new tree: shared keys glide, changed numbers crossfade, copies grow out of their originals, new parts fade in last */
+  async show(line,tree,op={}){
+    const cfg=this.lines[line]||(this.lines[line]={cx:CX,y:92,s:34});
+    const Lt=lay(tree,cfg.s), x0=cfg.al==='l'?cfg.cx:cfg.cx-Lt.w/2;   // al:'l' keeps the left edge still
+    const next=new Map(); for(const l of Lt.leaves) if(l.key!=null) next.set(l.key,shift(l,x0,cfg.y));
+    const P=this.st.L.eq, A=[], C=[], fins=[], drop=[], copies=[];
+    const cv=k=>{ const v=op.curve&&op.curve[k]; return typeof v==='number'?[v,0]:v?[v.x||0,v.y||0]:[0,0]; };
+    const klass=(spec,dim)=>klassOf(spec)+(dim?' dim':'');
+    for(const [k,spec] of next){
+      const c=this.cur.get(k);
+      if(c){
+        const from=c.spec, dim=c.el.classList.contains('dim'), [rx,ry]=cv(k);
+        if(spec.kind==='t'&&spec.text!==from.text){
+          const oe=c.el, ne=mkLeaf(P,{...from,text:spec.text}); ne.setAttribute('class',klass(spec,dim)); ne.setAttribute('opacity',0);
+          A.push(t=>{ const m=mixLeaf(from,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t)); setLeaf(oe,m); setLeaf(ne,m); oe.setAttribute('opacity',1-t); ne.setAttribute('opacity',t); });
+          drop.push(oe); c.el=ne;
+        } else {
+          c.el.setAttribute('class',klass(spec,dim));
+          if(!sameLeaf(from,spec)){ const e=c.el; A.push(t=>setLeaf(e,mixLeaf(from,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t)))); }
+        }
+        c.spec=spec; c.line=line;
+      } else {
+        const sk=op.from&&op.from[k];
+        if(sk) copies.push([k,spec,sk]);
+        else { const e=mkLeaf(P,spec); e.setAttribute('opacity',0); fins.push({e,spec}); this.cur.set(k,{el:e,spec,line}); }
+      }
+    }
+    const gone=[], goneSpec=new Map();
+    for(const [k,c] of this.cur) if(c.line===line&&!next.has(k)){ const o=c.el.getAttribute('opacity'); gone.push([c.el,o==null?1:+o]); goneSpec.set(k,c.spec); this.cur.delete(k); }
+    // 1: the originals settle into their new places
+    // sync: new parts fade in while the others move, instead of after
+    if(A.length||gone.length) await this.tw(op.dur??1000,t=>{ A.forEach(fn=>fn(t)); gone.forEach(([e,o])=>e.setAttribute('opacity',o*(1-t))); if(op.sync) fins.forEach(({e})=>e.setAttribute('opacity',t)); });
+    if(op.sync&&(A.length||gone.length)) fins.length=0;
+    gone.forEach(([e])=>e.remove()); drop.forEach(e=>e.remove());
+    // 2: copies grow out of the settled originals
+    for(const [k,spec,sk] of copies){
+      const src=(this.cur.get(sk)||{}).spec||goneSpec.get(sk);
+      if(!src||src.kind!==spec.kind){ const e=mkLeaf(P,spec); e.setAttribute('opacity',0); fins.push({e,spec}); this.cur.set(k,{el:e,spec,line}); continue; }
+      const start=spec.kind==='t'?{...spec,x:src.x,y:src.y,s:src.s}:spec.kind==='b'?{...spec,x1:src.x1,x2:src.x2,y:src.y}:{...spec,x1:src.x1,x2:src.x2,y1:src.y1,y2:src.y2};
+      const e=mkLeaf(P,start), [rx,ry]=cv(k); e.setAttribute('opacity',0);
+      C.push(t=>{ setLeaf(e,mixLeaf(start,spec,t,rx*Math.sin(Math.PI*t),ry*Math.sin(Math.PI*t))); e.setAttribute('opacity',Math.min(1,t*1.5)); });
+      this.cur.set(k,{el:e,spec,line});
+    }
+    const side=op.during?op.during():null;
+    if(C.length) await this.tw(op.dur2??op.dur??1100,t=>C.forEach(fn=>fn(t)));
+    // 3: brand-new parts fade in; a brace grows out from its middle, a strike is drawn
+    fins.forEach(({e,spec})=>{ if(spec.shape==='x'||spec.shape==='rt'){ e.setAttribute('pathLength',1); e.setAttribute('stroke-dasharray','1 2'); e.setAttribute('stroke-dashoffset',1); } });
+    if(fins.length) await this.tw(op.fade??850,t=>fins.forEach(({e,spec})=>{
+      if(spec.shape==='x'||spec.shape==='rt'){ e.setAttribute('opacity',t>0?1:0); e.setAttribute('stroke-dashoffset',1-t); }
+      else if(spec.shape==='br'){ const xm=(spec.x1+spec.x2)/2; setLeaf(e,{...spec,x1:lerp(xm,spec.x1,t),x2:lerp(xm,spec.x2,t)}); e.setAttribute('opacity',Math.min(1,t*2)); }
+      else e.setAttribute('opacity',t); }));
+    if(side) await side;
+  }
+  focus(keys){ const set=keys?new Set(keys):null; for(const [k,c] of this.cur) c.el.classList.toggle('dim',!!set&&!set.has(k)); }
+  async floatGroup(keys,to,op={}){
+    const items=keys.map(k=>this.cur.get(k)).filter(Boolean); if(!items.length) return;
+    const ps=items.map(c=>mid(c.spec)), xs=ps.map(p=>p[0]), ys=ps.map(p=>p[1]);
+    const dx=to.x-(Math.min(...xs)+Math.max(...xs))/2, dy=to.y-(Math.min(...ys)+Math.max(...ys))/2;
+    const cl=items.map(c=>{ const e=mkLeaf(this.st.L.fx,c.spec); return {e,a:c.spec,b:shift(c.spec,dx,dy)}; });
+    await this.tw(op.dur??1200,t=>cl.forEach(q=>{ setLeaf(q.e,mixLeaf(q.a,q.b,t)); q.e.setAttribute('opacity',.55*(t<.8?Math.min(1,t*5):(1-t)/.2)); }));
+    cl.forEach(q=>q.e.remove());
+  }
+  fadeIn(els,dur=800){ els=[].concat(els).filter(Boolean); els.forEach(e=>e.setAttribute('opacity',0)); return this.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',t))); }
+  async fadeOut(els,dur=800){ els=[].concat(els).filter(Boolean); await this.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',1-t))); els.forEach(e=>e.remove()); }
+}
+
+/* ───────── from the squares page ───────── */
+const LX=330;
+/* a condition such as x ≥ 0: it pulses between ink and red, and stays red */
+async function restrict(S,c,tree){
+  S.cfg('nz',c); await S.wait(600);
+  await S.show('nz',tree,{fade:800});
+  const cs=[...S.cur.values()].filter(q=>q.line==='nz'), ps=cs.map(q=>mid(q.spec)), xs=ps.map(p=>p[0]);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2, cy=ps[0][1];
+  await S.tw(3600,t=>{ const u=t*3, p=Math.sin(Math.PI*(u%1)), red=u>=2.5?1:p, k=1+.14*p;
+    cs.forEach(c=>{ c.el.style.fill=`color-mix(in srgb, var(--cR) ${Math.round(red*100)}%, var(--ink))`;
+      c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`); }); },true);
+}
+const geq=(v,k,op='≥')=>row(V(v,'n'+k+'v'),opr(op,'n'+k+'o'),num(0,'n'+k+'0'));
+
+
+const L4=[84,184,284];
+const startPM=E=>row(rt(num(E.a,'a','cA'),'r1'),opr('·','m'),rt(num(E.b,'b','cB'),'r2'));
+async function runPM(S,E){
+  const {a,b}=E, P=startPM(E);
+  await S.begin(P,{cx:LX-W(P,30),y:L4[0],s:30,al:'l'});
+  // two roots multiplied are the root of the product
+  await S.show('main',row(P,opr('=','q'),rt(row(num(a,'ga','cA'),opr('·','gm'),num(b,'gb','cB')),'gr')),{from:{ga:'a',gb:'b'},dur2:1300}); await S.wait(1100);
+  S.cfg('w',{cx:LX,y:L4[1],s:30,al:'l'});
+  await S.show('w',row(opr('=','wq'),rt(num(a*b,'wn'),'wr')),{from:{wr:'gr'},dur2:1300}); await S.wait(1000);
+  await S.show('w',row(opr('=','wq'),rt(num(a*b,'wn'),'wr'),opr('=','wq2'),num(Math.sqrt(a*b),'wv')),{fade:850}); await S.wait(300);
+  await S.glow('wv');
+}
+
+const L5=[86,196,300];
+/* ... and the other way: a root over a root is the root of the fraction */
+const startQB=E=>frc(rt(num(E.a,'a','cA'),'r1'),rt(num(E.b,'b','cB'),'r2'),'f');
+async function runQB(S,E){
+  const P=startQB(E), c=E.a/E.b;
+  await S.begin(P,{cx:LX-W(P,30),y:L5[0],s:30,al:'l'});
+  await S.show('main',row(P,opr('=','q'),rt(frc(num(E.a,'ga','cA'),num(E.b,'gb','cB'),'gf'),'gr')),{from:{ga:'a',gb:'b','gf.bar':'f.bar'},dur2:1300}); await S.wait(1100);
+  S.cfg('w',{cx:LX,y:L5[1],s:30,al:'l'});
+  await S.show('w',row(opr('=','wq'),rt(num(c,'wn'),'wr')),{from:{wr:'gr'},dur2:1300}); await S.wait(1000);
+  await S.show('w',row(opr('=','wq'),rt(num(c,'wn'),'wr'),opr('=','wq2'),num(Math.sqrt(c),'wv')),{fade:850}); await S.wait(300);
+  await S.glow('wv');
+}
+
+
+/* ───────── from the powers page ───────── */
+/* ───────── 2 · a^m · a^n ───────── */
+const startMul=E=>row(pw(N(E.a,'ab','cA'),X(E.m,'am','cF')),opr('·','mo'),pw(N(E.a,'bb','cA'),X(E.n,'bm','cO')));
+async function runMul(S,E){
+  const a=E.a, s=30, M0=startMul(E), fA=id=>N(a,'wA'+id,'cA'), fB=id=>N(a,'wB'+id,'cA'), numeric=typeof E.m==='number';
+  await S.begin(M0,{cx:CX,y:92,s:34});
+  S.cfg('w',{cx:CX,y:228,s}); S.cfg('r',{cx:CX,y:392,s:34});
+  const iA=SL(E.m), iB=SL(E.n), pA=prod('wA',iA,fA), pB=prod('wB',iB,fB);
+  const gA=brc(pA,X(E.m,'wAl','cF'),'u','wAb','cF'), gB=brc(pB,X(E.n,'wBl','cO'),'u','wBb','cO');
+  await S.show('w',row(opr('=','we'),gA,opr('·','wo'),ph(gB,s)),{from:{...cps('wA',iA,'ab'),wAl:'am',wo:'mo'},dur:1300});
+  await S.wait(800);
+  await S.show('w',row(opr('=','we'),gA,opr('·','wo'),gB),{from:{...cps('wB',iB,'bb'),wBl:'bm'},dur:1300});
+  await S.wait(1400);
+  // one long row of factors: the two counts add up
+  await S.show('w',row(opr('=','we'),brc(row(pA,opr('·','wo'),pB),row(X(E.m,'wAl','cF'),opr('+','wlp'),X(E.n,'wBl','cO')),'u','wSb')),{dur:1300});
+  await S.wait(1400);
+  const rE=row(X(E.m,'r1','cF'),opr('+','rp'),X(E.n,'r2','cO'));
+  await S.show('r',row(opr('=','re'),pw(N(a,'rb','cA'),rE)),{from:{rb:'wA0',r1:'wAl',r2:'wBl',rp:'wlp'},dur:1300});
+  await S.wait(1000);
+  let fT=row(X(E.m,'me1','cF'),opr('+','mep'),X(E.n,'me2','cO')), fk={me1:'r1',mep:'rp',me2:'r2'};
+  if(numeric){
+    await S.show('r',row(opr('=','re'),pw(N(a,'rb','cA'),rE),opr('=','rq'),pw(N(a,'rc','cA'),num(E.m+E.n,'rv'))),{from:{rc:'rb'}});
+    await S.wait(1000); fT=num(E.m+E.n,'me1'); fk={me1:'rv'};
+  }
+  await S.show('main',row(M0,opr('=','mq'),pw(N(a,'mb','cA'),fT)),{from:{mb:numeric?'rc':'rb',...fk},dur:1300});
+}
+
+/* ───────── 3–5 · a^m / a^n ───────── */
+const startDiv=E=>frc(pw(N(E.a,'tb','cA'),X(E.m,'te','cF')),pw(N(E.a,'bb','cA'),X(E.n,'be',E.cn||'cO')),'M');
+// matching factors share an id; the extra ones ('x…') stand at the left
+function divIds(E){
+  const nm=typeof E.m==='number', sh=nm?SL(Math.min(E.m,E.n)):['0','1','e','3','4'];
+  const xs=nm?[...Array(Math.abs(E.m-E.n))].map((_,i)=>'x'+i):E.rel==='='?[]:['x0','xe','x1'];
+  const gt=nm?E.m>E.n:E.rel==='>', lt=nm?E.m<E.n:E.rel==='<';
+  return [gt?[...xs,...sh]:sh,lt?[...xs,...sh]:sh];
+}
+/* a factor above meets its partner below, they become 1, and the 1 fades away */
+async function pairOne(S,kt,kb,extra,keep){
+  const ct=S.cur.get(kt), cb=S.cur.get(kb), bar=S.cur.get('W.bar').spec, s=ct.spec.s, L=S.st.L.fx;
+  const x=(ct.spec.x+cb.spec.x)/2, y=bar.y+.36*s;
+  const bg=el('rect',{x:x-.46*s,y:bar.y-.52*s,width:.92*s,height:1.04*s,rx:.3*s,class:'mbg',opacity:0},L);
+  const A=mkLeaf(L,ct.spec), B=mkLeaf(L,cb.spec), O=mkLeaf(L,{kind:'t',text:'1',cls:'',x,y,s}); O.setAttribute('opacity',0);
+  ct.el.setAttribute('opacity',0); cb.el.setAttribute('opacity',0);
+  const ex=extra.map(k=>S.cur.get(k)).filter(Boolean).map(c=>c.el);
+  await S.tw(1100,t=>{ setLeaf(A,mixLeaf(ct.spec,{...ct.spec,x,y},t)); setLeaf(B,mixLeaf(cb.spec,{...cb.spec,x,y},t)); bg.setAttribute('opacity',t); ex.forEach(e=>e.setAttribute('opacity',1-t)); });
+  await S.tw(650,t=>{ A.setAttribute('opacity',1-t); B.setAttribute('opacity',1-t); O.setAttribute('opacity',t); });
+  A.remove(); B.remove();
+  if(keep){ S.cur.set(keep,{el:O,spec:{key:keep,kind:'t',text:'1',cls:'',x,y,s},line:'w'}); S.keepBg=bg; return; }
+  await S.wait(350);
+  await S.tw(700,t=>{ O.setAttribute('opacity',1-t); bg.setAttribute('opacity',1-t); });
+  O.remove(); bg.remove();
+}
+/* behind the dots ⋯ : many pairs meet and vanish quickly, overlapping */
+async function burst(S,kt,kb,extra){
+  const ct=S.cur.get(kt), cb=S.cur.get(kb), bar=S.cur.get('W.bar').spec, s=ct.spec.s, L=S.st.L.fx, base=S.st.baseSpec;
+  const x0=(ct.spec.x+cb.spec.x)/2, yT=ct.spec.y, yB=cb.spec.y, yM=bar.y+.36*s, K=11, gap=120, life=1150, total=(K-1)*gap+life;
+  const bg=el('rect',{x:x0-1.1*s,y:bar.y-.52*s,width:2.2*s,height:1.04*s,rx:.3*s,class:'mbg',opacity:0},L);
+  const fade=[ct.el,cb.el,...extra.map(k=>S.cur.get(k)).filter(Boolean).map(c=>c.el)];
+  const items=[...Array(K)].map((_,i)=>{ const dx=(((i*7)%K)/(K-1)-.5)*1.5*s;
+    const A=mkLeaf(L,{...base,x:x0+dx,y:yT,s}), B=mkLeaf(L,{...base,x:x0+dx,y:yB,s}), O=mkLeaf(L,{kind:'t',text:'1',cls:'',x:x0+dx,y:yM,s});
+    [A,B,O].forEach(e=>e.setAttribute('opacity',0)); return {A,B,O,t0:i*gap}; });
+  await S.tw(total,t=>{ const T=t*total;
+    fade.forEach(e=>e.setAttribute('opacity',1-clamp(T/600)));
+    bg.setAttribute('opacity',clamp(T/400)*(1-clamp((T-total+400)/400)));
+    items.forEach(q=>{ const u=clamp((T-q.t0)/life), mv=ease(clamp((u-.12)/.45));
+      q.A.setAttribute('y',lerp(yT,yM,mv)); q.B.setAttribute('y',lerp(yB,yM,mv));
+      const on=clamp(u/.12), one=clamp((u-.57)/.15), out=clamp((u-.78)/.22);
+      q.A.setAttribute('opacity',on*(1-one)*.9); q.B.setAttribute('opacity',on*(1-one)*.9); q.O.setAttribute('opacity',one*(1-out)); });
+  },true);
+  items.forEach(q=>{ q.A.remove(); q.B.remove(); q.O.remove(); }); bg.remove();
+}
+async function runDiv(S,E,method){
+  const a=E.a, s=30, cn=E.cn||'cO', M0=startDiv(E), [iT,iB]=divIds(E), pairs=iT.filter(i=>iB.includes(i)).reverse(), numeric=typeof E.m==='number';
+  const rel=numeric?(E.m>E.n?'>':E.m<E.n?'<':'='):E.rel;
+  await S.begin(M0,{cx:CX,y:92,s:34});
+  S.cfg('w',{cx:CX,y:278,s}); S.cfg('r',{cx:CX,y:442,s:32});
+  const st=new Set(), fac=P=>id=>{ const f=N(a,P+id,'cA'); return st.has(P+id)?strike(f):f; };
+  const T=()=>brc(prod('wT',iT,fac('wT')),X(E.m,'wTl','cF'),'o','wTb','cF');
+  const B=()=>brc(prod('wB',iB,fac('wB')),X(E.n,'wBl',cn),'u','wBb',cn);
+  const full=()=>row(opr('=','we'),fracL(T(),B(),'W',s));
+  const tw=W(T(),s), bw=W(B(),s), mx=Math.max(tw,bw);
+  // write out the factors: first above, then below
+  await S.show('w',row(opr('=','we'),G(frc(row(cellN(mx-tw),T()),cellN(mx),'W'))),{from:{...cps('wT',iT,'tb'),wTl:'te'},dur:1300});
+  await S.wait(800);
+  await S.show('w',full(),{from:{...cps('wB',iB,'bb'),wBl:'be'},dur:1300});
+  await S.wait(1400);
+  S.st.baseSpec={...S.cur.get('wT0').spec};
+  // cancel the pairs, right to left
+  if(method==='cross'){
+    for(const id of pairs){
+      if(isE(id)){ await S.wait(500); continue; }
+      st.add('wT'+id); await S.show('w',full(),{fade:600}); await S.wait(250);
+      st.add('wB'+id); await S.show('w',full(),{fade:600}); await S.wait(550);
+    }
+  } else {
+    const before=(ids,P,id)=>{ const i=ids.indexOf(id); return i>0?P+'m'+ids[i-1]:null; };
+    for(let q=0;q<pairs.length;q++){ const id=pairs[q], ex=[before(iT,'wT',id),before(iB,'wB',id)].filter(Boolean);
+      if(isE(id)) await burst(S,'wT'+id,'wB'+id,ex);
+      else await pairOne(S,'wT'+id,'wB'+id,ex,q===pairs.length-1?'w1':null);
+      await S.wait(isE(id)?500:350);
+    }
+  }
+  await S.wait(900);
+  const one=num(1,'w1'), bgOut=()=>S.keepBg?S.fadeOut(S.keepBg,900):null, wl=(...x)=>row(opr('=','we'),...x);
+  const eT=row(X(E.m,'me1','cF'),opr('−','mem'),X(E.n,'me2',cn));
+  if(rel==='>'){
+    const R=iT.filter(i=>!pairs.includes(i)), lab=row(X(E.m,'wTl','cF'),opr('−','wlm'),X(E.n,'wBl',cn));
+    const top=brc(prod('wT',R,fac('wT')),lab,'o','wTb');
+    await S.all(S.show('w',wl(G(frc(top,one,'W'))),{dur:1300}),bgOut()); await S.wait(1100);
+    await S.show('w',wl(top),{dur:1200}); await S.wait(1000);
+    await S.show('main',row(M0,opr('=','mq'),pw(N(a,'mb','cA'),eT)),{from:{mb:'wT'+R[0],me1:'wTl',mem:'wlm',me2:'wBl'},dur:1300});
+    if(numeric){ await S.wait(900); await S.show('main',row(M0,opr('=','mq'),pw(N(a,'mb','cA'),eT),opr('=','mq2'),pw(N(a,'mc','cA'),num(E.m-E.n,'mv'))),{from:{mc:'mb'}}); }
+    return;
+  }
+  if(rel==='='){
+    await S.all(S.show('w',wl(one),{dur:1300}),bgOut()); await S.wait(1000);
+    await S.show('main',row(M0,opr('=','mq'),pw(N(a,'mb','cA'),eT)),{from:{mb:'tb',me1:'te',me2:'be'},dur:1300}); await S.wait(900);
+    await S.show('main',row(M0,opr('=','mq'),pw(N(a,'mb','cA'),eT),opr('=','mq2'),pw(N(a,'mc','cA'),num(0,'mv'))),{from:{mc:'mb'}}); await S.wait(1000);
+    // so a⁰ and 1 are the same thing
+    await S.show('r',row(pw(N(a,'rb','cA'),num(0,'rz')),opr('=','rq'),num(1,'r1')),{from:{rb:'mc',rz:'mv',r1:'w1'},dur:1300});
+    await S.wait(500); await S.wiggle(['rb','rz','rq','r1']);
+    if(isV(a)) await noZero(S,a);
+    return;
+  }
+  // more below than above: a 1 stays on top
+  const R=iB.filter(i=>!pairs.includes(i)), lab=row(X(E.n,'wBl',cn),opr('−','wlm'),X(E.m,'wTl','cF')), k0='wB'+R[0];
+  await S.all(S.show('w',wl(G(frc(one,brc(prod('wB',R,fac('wB')),lab,'u','wBb'),'W'))),{dur:1300}),bgOut()); await S.wait(1100);
+  await S.show('w',wl(frc(one,pw(N(a,k0,'cA'),lab),'W')),{dur:1300}); await S.wait(900);
+  const k=numeric?E.n-E.m:null;
+  if(numeric){ await S.show('w',wl(frc(one,pw(N(a,k0,'cA'),num(k,'wBl')),'W'))); await S.wait(900); }
+  await S.show('main',row(M0,opr('=','mq'),pw(N(a,'mb','cA'),eT)),{from:{mb:'tb',me1:'te',me2:'be'},dur:1300}); await S.wait(900);
+  if(numeric){ await S.show('main',row(M0,opr('=','mq'),pw(N(a,'mb','cA'),eT),opr('=','mq2'),pw(N(a,'mc','cA'),num('−'+k,'mv'))),{from:{mc:'mb'}}); await S.wait(1000); }
+  // a negative exponent: divide by a, again and again
+  const ids=SL(numeric?k:'v');
+  const chain=brc(row(ids.map(id=>[opr('/','rs'+id),isE(id)?opr('⋯','ra'+id):N(a,'ra'+id,'cA')])),
+    numeric?num(k,'rl'):row(V('n','rl1',cn),opr('−','rlm'),V('m','rl2','cF')),'u','rlb');
+  const left=numeric?pw(N(a,'rb','cA'),num('−'+k,'rz')):pw(N(a,'rb','cA'),row(V('m','rz1','cF'),opr('−','rzm'),V('n','rz2',cn)));
+  const from={r1:'w1',...cps('ra',ids,k0),...(numeric?{rb:'mc',rz:'mv',rl:'wBl'}:{rb:'mb',rz1:'me1',rzm:'mem',rz2:'me2',rl1:'wBl',rlm:'wlm',rl2:'wTl'})};
+  await S.show('r',row(left,opr('=','rq'),num(1,'r1'),chain),{from,dur:1400});
+  await S.wait(1600);
+  // and back together: one over a to the power
+  const ex2=numeric?num(k,'rl'):row(V('n','rl1',cn),opr('−','rlm'),V('m','rl2','cF'));
+  await S.show('r',row(left,opr('=','rq'),frc(num(1,'r1'),pw(N(a,'ra0','cA'),ex2),'rF')),{dur:1500});
+}
+
+
+/* ───────── from the scientific-notation page ───────── */
+/* ───────── decimal numbers: the digits stand still and the decimal mark hops between them ───────── */
+// D = {P, ds:[{d,k,c}], pt: digits before the mark, show: mark visible, nk: counter for new zeros}
+function mkD(str,P,cls){
+  const [i,f='']=String(str).split('.'), all=[...(i+f)], first=all.findIndex(c=>c!=='0'), last=all.length-1-[...all].reverse().findIndex(c=>c!=='0');
+  return {P,ds:all.map((d,j)=>({d,k:P+j,c:cls&&j>=first&&j<=last?cls:''})),pt:i.length,show:f.length>0,nk:0};
+}
+function cloneD(D,P,cls){
+  const E={P,ds:D.ds.map((q,j)=>({d:q.d,k:P+j,c:cls??q.c})),pt:D.pt,show:D.show,nk:0}, from={[P+'p']:D.P+'p'};
+  D.ds.forEach((q,j)=>{ from[P+j]=q.k; }); return [E,from];
+}
+const copyD=D=>({...D,ds:D.ds.map(q=>({...q}))});
+const padR=D=>D.ds.push({d:'0',k:D.P+'z'+(D.nk++),c:''});
+const padL=D=>{ D.ds.unshift({d:'0',k:D.P+'z'+(D.nk++),c:''}); D.pt++; };
+function trimD(D){
+  while(D.pt>1&&D.ds[0].d==='0'){ D.ds.shift(); D.pt--; }
+  while(D.ds.length>D.pt&&D.ds[D.ds.length-1].d==='0') D.ds.pop();
+  D.show=D.ds.length>D.pt;
+}
+const valD=D=>{ const s=D.ds.map(q=>q.d).join(''); return +(s.slice(0,D.pt)+'.'+s.slice(D.pt)); };
+// the digits and the mark as one row; br puts a brace under items a … b−1
+function decN(D,br){
+  const it=[]; D.ds.forEach((q,j)=>{ if(j===D.pt&&D.show) it.push(dmk(D.P+'p')); it.push(num(q.d,q.k,q.c)); });
+  if(D.show&&D.pt>=D.ds.length) it.push(dmk(D.P+'p'));
+  if(!br) return row(it);
+  return row(it.slice(0,br.a),brc(row(it.slice(br.a,br.b)),br.lab,'u',br.key,'cF'),it.slice(br.b));
+}
+const fmt=x=>String(+x.toFixed(10));            // 2.6999999… → "2.7"
+const sgn=n=>n<0?'−'+(-n):String(n);
+const T10=P=>row(num(1,P+'1'),num(0,P+'0'));     // a ten as two digits, so its zero can travel
+const ex10=(n,P)=>n<0?row(num('−',P+'m','cF'),num(-n,P,'cF')):num(n,P,'cF');
+const zs=j=>num(0,'fz'+j);
+/* the factor 1, 10, 100 … (big) or 1, 0.1, 0.01 … (small) with k zeros; br: brace the zeros with the count */
+function facTree(big,k,br){
+  const lab=()=>num(k,'fl','cF');
+  if(big){ const z=row([...Array(k)].map((_,j)=>zs(j+1))); return row(num(1,'f1'),br?brc(z,lab(),'u','fb','cF'):z); }
+  if(!k) return num(1,'f1');
+  const z=row(zs(0),dmk('fp'),[...Array(k-1)].map((_,j)=>zs(j+1)));
+  return row(br?brc(z,lab(),'u','fb','cF'):z,num(1,'f1'));
+}
+
+/* ───────── 2–3 · decimal form → scientific notation ───────── */
+const startSci=E=>decN(mkD(E.x,'d','cA'));
+async function runToSci(S,E){
+  const s=32, big=!E.x.startsWith('0'), Dm=mkD(E.x,'d','cA'), D=mkD(E.x,'w','cA');
+  const h=big?D.ds.length-1:D.ds.findIndex(q=>q.d!=='0');   // how far the mark has to hop
+  let k=0;
+  const wl=()=>row(opr('=','we'),decN(D),opr('·','wo'),facTree(big,k));
+  const eqW=W(opr('='),s), pw10=(P,e)=>pw(row(num(1,P+'1'),num(0,P+'0')),big?num(h,e,'cF'):row(num('−',e+'m','cF'),num(h,e,'cF')));
+  // the longest line decides where the left edge is
+  const Dn=copyD(D); Dn.show=true; Dn.pt+=big?-h:h; trimD(Dn);
+  const w1=W(row(opr('='),decN({...D,show:true}),opr('·'),facTree(big,h)),s), w2=W(row(cellN(eqW),decN(Dm),opr('='),decN(Dn),opr('·'),pw10('x','x')),s);
+  const L=CX-Math.max(w1,w2)/2;
+  await S.begin(row(cellN(eqW),decN(Dm)),{cx:L,y:100,s,al:'l'});
+  S.cfg('w',{cx:L,y:240,s,al:'l'});
+  const from={wp:'dp'}; D.ds.forEach((q,j)=>{ from[q.k]=Dm.ds[j].k; });
+  await S.show('w',wl(),{from,dur:1300}); await S.wait(800);
+  if(!D.show){ D.show=true; await S.show('w',wl(),{fade:700}); await S.wait(500); }
+  // each hop of the mark is balanced by one more zero in the factor
+  for(let i=0;i<h;i++){ D.pt+=big?-1:1; k++; await S.show('w',wl(),{dur:750,fade:500,curve:{wp:{y:-.85*s}}}); await S.wait(260); }
+  await S.wait(700);
+  trimD(D); await S.show('w',wl(),{dur:1000}); await S.wait(900);
+  // count the zeros of the factor: that is its power of ten
+  await S.show('w',row(opr('=','we'),decN(D),opr('·','wo'),facTree(big,h,true)),{fade:900}); await S.wait(1100);
+  const p10=big?pw(row(num(1,'f1'),zs(1)),num(h,'fl','cF')):pw(row(num(1,'f1'),zs(0)),row(num('−','flm','cF'),num(h,'fl','cF')));
+  await S.show('w',row(opr('=','we'),decN(D),opr('·','wo'),p10),{dur:1300,curve:big?null:{f1:{y:-.9*s}}}); await S.wait(1000);
+  // and in the number itself: the digits after the first (big) or the zeros in front (small)
+  const [Dr,fr]=cloneD(D,'R'), br={a:big?1:0,b:big?Dm.ds.length:h+1,lab:num(h,'ql','cF'),key:'qb'};
+  await S.show('main',row(cellN(eqW),decN(Dm,br),opr('=','mq'),decN(Dr),opr('·','mo'),pw10('q','qe')),
+    {from:{...fr,q1:'f1',q0:big?'fz1':'fz0',qe:'fl',qem:'flm',ql:'fl'},dur:1400});
+  await S.wait(500); await S.all(S.glow('qe'),S.glow('ql'));
+}
+
+
+/* ───────── from the fractions page ───────── */
+const gcd=(a,b)=>b?gcd(b,a%b):a, lcm=(a,b)=>a/gcd(a,b)*b;
+/* fraction helpers */
+const term=(F,P,cls)=>F.whole?num(F.n,P+'n',cls):frc(F.n,F.d,P,cls);
+const keysOf=(P,F)=>F&&F.whole?[P+'n']:[P+'n',P+'d',P+'.bar'];
+const cp=(to,from,F)=>F.whole?{[to+'n']:from+'n'}:{[to+'n']:from+'n',[to+'d']:from+'d',[to+'.bar']:from+'.bar'};
+function fT(P,F,cls){
+  if(F.whole) return num(F.n,P+'n',cls);
+  if(!F.fac) return frc(num(F.n,P+'n',cls),num(F.d,P+'d',cls),P,cls);
+  const q=F.fac;
+  return frc(row(num(F.n,P+'n',cls),opr(q.sym,P+'m','cF'),num(q.k,P+'f','cF')),
+             row(num(F.d,P+'d',cls),opr(q.sym,P+'m2','cF'),num(q.k,P+'f2','cF')),P,cls);
+}
+const startTree=E=>row(term(E.A,'a0','cA'),opr(E.op,'op0'),term(E.B,'b0','cB'));
+const mkF=F=>({n:F.n,d:F.whole?1:F.d,whole:!!F.whole});
+
+/* the fraction bars, as more steps of the same animation context */
+class FracMix{
+  boxKeys(keys,cls,pad=9){
+    let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+    for(const k of keys){ const c=this.cur.get(k); if(!c) continue; let b; try{ b=c.el.getBBox(); }catch(e){ continue; }
+      x1=Math.min(x1,b.x); y1=Math.min(y1,b.y); x2=Math.max(x2,b.x+b.width); y2=Math.max(y2,b.y+b.height); }
+    return el('rect',{x:x1-pad,y:y1-pad,width:x2-x1+2*pad,height:y2-y1+2*pad,rx:12,class:cls,opacity:0},this.st.L.marks);
+  }
+  ghostKeys(keys){ return keys.map(k=>this.cur.get(k)).filter(Boolean).map(c=>{ const g=c.el.cloneNode(true); g.removeAttribute('opacity'); g.classList.add('ghostT'); g.classList.remove('dim'); this.st.L.marks.appendChild(g); return g; }); }
+  fadeIn(els,dur=800){ els=[].concat(els).filter(Boolean); els.forEach(e=>e.setAttribute('opacity',0)); return this.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',t))); }
+  async fadeOut(els,dur=800){ els=[].concat(els).filter(Boolean); await this.tw(dur,t=>els.forEach(e=>e.setAttribute('opacity',1-t))); els.forEach(e=>e.remove()); }
+
+  /* fraction bars */
+  model(op){
+    const W=op.wholes??Math.max(1,Math.ceil(op.n/op.d)), uw=op.uw, h=op.h??38, gap=op.gap??16;
+    const x0=op.x0??((op.cx??400)-(W*uw+(W-1)*gap)/2);
+    const Mo={bars:[],cells:[],d:op.d,uw,h,y:op.y,x0,gap,W};
+    for(let i=0;i<W;i++) Mo.bars.push(this.mkBar(x0+i*(uw+gap),op.y,uw,h,op.d));
+    for(let i=0;i<op.n;i++) Mo.cells.push(this.mkCell(Mo,i,op.cls));
+    this.modelEls(Mo).forEach(e=>e.setAttribute('opacity',0));
+    return Mo;
+  }
+  mkBar(x,y,w,h,d){
+    const B={x,y,w,h,lines:[]};
+    B.bg=el('rect',{x,y,width:w,height:h,class:'mbg'},this.st.L.mbg);
+    B.g=el('g',{},this.st.L.mfg);
+    for(let j=1;j<d;j++) B.lines.push({j,e:el('line',{x1:x+w*j/d,x2:x+w*j/d,y1:y,y2:y+h,class:'mline'},B.g)});
+    B.out=el('rect',{x,y,width:w,height:h,class:'mout'},B.g);
+    return B;
+  }
+  center(Mo){ return {x:Mo.x0+(Mo.W*Mo.uw+(Mo.W-1)*Mo.gap)/2,y:Mo.y+Mo.h/2}; }
+  slot(Mo,i){ const b=Math.floor(i/Mo.d), B=Mo.bars[Math.min(b,Mo.bars.length-1)], w=B.w/Mo.d; return {x:B.x+(i-b*Mo.d)*w,y:B.y,w,h:B.h}; }
+  mkCell(Mo,i,cls){ const s=this.slot(Mo,i); const e=el('rect',{x:s.x,y:s.y,width:s.w,height:s.h,class:'cell '+cls},this.st.L.mcell); return {e,cls,...s}; }
+  setCell(q){ q.e.setAttribute('x',q.x); q.e.setAttribute('y',q.y); q.e.setAttribute('width',q.w); q.e.setAttribute('height',q.h); }
+  modelEls(Mo){ return [...Mo.bars.flatMap(B=>[B.bg,B.g]),...Mo.cells.map(q=>q.e)]; }
+  showModel(Mo,dur=900){ return this.fadeIn(this.modelEls(Mo),dur); }
+  fadeModel(Mo,dur=800){ return this.fadeOut(this.modelEls(Mo),dur); }
+  /* new cuts grow in green from the middle of each piece, then settle to normal */
+  async subdivide(Mo,k,dur=1400){
+    const nd=Mo.d*k, news=[];
+    for(const B of Mo.bars){
+      const old=B.lines; B.lines=[]; const mid=B.y+B.h/2;
+      for(let j=1;j<nd;j++){
+        if(j%k===0){ const L=old.find(q=>q.j*k===j); L.j=j; B.lines.push(L); }
+        else { const e=el('line',{x1:B.x+B.w*j/nd,x2:B.x+B.w*j/nd,y1:mid,y2:mid,class:'mline hot'},B.g); B.g.insertBefore(e,B.out); B.lines.push({j,e}); news.push({e,B}); }
+      }
+      B.out.classList.add('hot');
+    }
+    const old=Mo.cells; Mo.d=nd; Mo.cells=[];
+    old.forEach((q,i)=>{ for(let p=0;p<k;p++) Mo.cells.push(this.mkCell(Mo,i*k+p,q.cls)); q.e.remove(); });
+    await this.tw(dur,t=>news.forEach(({e,B})=>{ e.setAttribute('y1',B.y+B.h/2*(1-t)); e.setAttribute('y2',B.y+B.h-B.h/2*(1-t)); }));
+    await this.wait(1000);
+    news.forEach(q=>q.e.classList.remove('hot')); Mo.bars.forEach(B=>B.out.classList.remove('hot'));
+    await this.wait(700);
+  }
+  /* cuts that go away light up green first, then shrink into the middle */
+  async merge(Mo,k,dur=1300){
+    const outs=[];
+    for(const B of Mo.bars){ const keep=[]; for(const L of B.lines){ if(L.j%k===0){ L.j/=k; keep.push(L); } else { outs.push({e:L.e,B}); L.e.classList.add('hot'); } } B.lines=keep; B.out.classList.add('hot'); }
+    await this.wait(1100);
+    await this.tw(dur,t=>outs.forEach(({e,B})=>{ e.setAttribute('y1',B.y+B.h/2*t); e.setAttribute('y2',B.y+B.h-B.h/2*t); }));
+    outs.forEach(q=>q.e.remove());
+    const old=Mo.cells; Mo.d/=k; Mo.cells=[];
+    for(let i=0;i<old.length;i+=k) Mo.cells.push(this.mkCell(Mo,i/k,old[i].cls));
+    old.forEach(q=>q.e.remove());
+    Mo.bars.forEach(B=>B.out.classList.remove('hot'));
+    await this.wait(700);
+  }
+  moveCells(list,dur=1100){
+    const L=list.map(([q,s])=>({q,a:{x:q.x,y:q.y,w:q.w,h:q.h},b:s}));
+    return this.tw(dur,t=>L.forEach(({q,a,b})=>{ q.x=lerp(a.x,b.x,t); q.y=lerp(a.y,b.y,t); q.w=lerp(a.w,b.w,t); q.h=lerp(a.h,b.h,t); this.setCell(q); }));
+  }
+  async clearModel(dur=1000){
+    const L=this.st.L, els=[...L.mbg.children,...L.mcell.children,...L.mfg.children,...L.marks.children];
+    await this.all(this.fadeOut(els,dur),...Object.keys(this.lines).filter(k=>k!=='main').map(k=>this.show(k,row(),{dur})));
+  }
+}
+for(const k of Object.getOwnPropertyNames(FracMix.prototype)) if(k!=='constructor') Ctx.prototype[k]=FracMix.prototype[k];
+
+/* shared steps */
+async function scaleStep(S,view,t,sym,k,src){
+  const P=t.P; t.F.fac={sym,k};
+  await S.show('main',view(),{from:src?{[P+'f']:src,[P+'f2']:src}:{}});
+  await S.wait(600);
+  if(t.m){
+    await S.floatGroup([P+'f'],S.center(t.m),{dur:1200});
+    await (sym==='·'?S.subdivide(t.m,k):S.merge(t.m,k));
+  }
+  if(sym==='·'){ t.F.n*=k; t.F.d*=k; } else { t.F.n/=k; t.F.d/=k; }
+  t.F.fac=null;
+  await S.all(S.show('main',view()),t.lab?S.show(t.lab,fT(t.lp,t.F,t.cls)):null);
+  await S.wait(900);
+}
+async function over1Step(S,view,ts){
+  ts.forEach(t=>t.F.whole=false);
+  await S.all(S.show('main',view()),...ts.map(t=>t.lab?S.show(t.lab,fT(t.lp,t.F,t.cls)):null));
+  await S.wait(900);
+}
+async function finishFrac(S,MR,N,D,P){
+  const g=gcd(N,D);
+  if(g>1){
+    await S.show('main',MR(frc(row(num(N,P+'n'),opr('/',P+'m','cF'),num(g,P+'f','cF')),row(num(D,P+'d'),opr('/',P+'m2','cF'),num(g,P+'f2','cF')),P)));
+    await S.wait(1000); N/=g; D/=g;
+    await S.show('main',MR(frc(num(N,P+'n'),num(D,P+'d'),P))); await S.wait(900);
+  }
+  if(D===1){ await S.show('main',MR(num(N,P+'n')),{dur:1200}); }
+}
+
+async function shortcut(S,E){
+  const A=E.A, B=E.B; await S.wait(1200);
+  await S.clearModel();
+  S.cfg('cut',{cx:CX,y:330,s:34});
+  const cS=row(frc(A.n,A.d,'ca','cA'),opr('·','cop'),frc(B.n,B.d,'cb','cB'));
+  await S.show('cut',cS,{from:{can:'a0n',cad:'a0d','ca.bar':'a0.bar',cbn:'b0n',cbd:'b0d','cb.bar':'b0.bar',cop:'op0'},dur:1300});
+  await S.wait(800);
+  await S.show('cut',row(cS,opr('=','ce'),frc(row(num(A.n,'xn1','cA'),opr('·','xm1'),num(B.n,'xn2','cB')),row(num(A.d,'xd1','cA'),opr('·','xm2'),num(B.d,'xd2','cB')),'X')),{from:{xn1:'can',xn2:'cbn',xd1:'cad',xd2:'cbd'},dur:1300});
+  await S.wait(1100);
+  let N=A.n*B.n, D=A.d*B.d;
+  await S.show('cut',row(cS,opr('=','ce'),frc(num(N,'xn1'),num(D,'xd1'),'X'))); await S.wait(900);
+  const g=gcd(N,D);
+  if(g>1){
+    await S.show('cut',row(cS,opr('=','ce'),frc(row(num(N,'xn1'),opr('/','xm','cF'),num(g,'xf','cF')),row(num(D,'xd1'),opr('/','xm2','cF'),num(g,'xf2','cF')),'X')));
+    await S.wait(1000); N/=g; D/=g;
+    await S.show('cut',row(cS,opr('=','ce'),frc(num(N,'xn1'),num(D,'xd1'),'X')));
+  }
+}
+
+async function mulArea(S,E){
+  const A=E.A, B=E.B, START=startTree(E); await S.begin(START);
+  const MR=x=>row(START,opr('=','e1'),x), Lr=S.st.L;
+  const sx=232, sy=262, SZ=226;
+  S.cfg('labA',{cx:sx+SZ/2,y:sy-22,s:22}); S.cfg('labB',{cx:sx-50,y:sy+SZ/2+8,s:22});
+  S.cfg('work',{cx:600,y:330,s:24}); S.cfg('work2',{cx:600,y:410,s:24});
+  const bg=el('rect',{x:sx,y:sy,width:SZ,height:SZ,class:'mbg'},Lr.mbg), out=el('rect',{x:sx,y:sy,width:SZ,height:SZ,class:'mout'},Lr.mfg);
+  await S.fadeIn([bg,out],900); await S.wait(500);
+  // first fraction: columns
+  S.focus(keysOf('a0',A)); await S.show('labA',frc(A.n,A.d,'la','cA'),{from:cp('la','a0',A),dur:1300});
+  const vl=[]; for(let i=1;i<A.d;i++) vl.push(el('line',{x1:sx+SZ*i/A.d,x2:sx+SZ*i/A.d,y1:sy,y2:sy+SZ,class:'mline'},Lr.mfg));
+  await S.fadeIn(vl,900);
+  const cols=[]; for(let i=0;i<A.n;i++) cols.push(el('rect',{x:sx+SZ*i/A.d,y:sy,width:SZ/A.d,height:SZ,class:'soft cA'},Lr.mcell));
+  await S.fadeIn(cols,1000); await S.wait(800);
+  // second fraction: rows
+  S.focus(keysOf('b0',B)); await S.show('labB',frc(B.n,B.d,'lb','cB'),{from:cp('lb','b0',B),dur:1300});
+  const hl=[]; for(let j=1;j<B.d;j++) hl.push(el('line',{x1:sx,x2:sx+SZ,y1:sy+SZ*j/B.d,y2:sy+SZ*j/B.d,class:'mline'},Lr.mfg));
+  await S.fadeIn(hl,900);
+  const rws=[]; for(let j=0;j<B.n;j++) rws.push(el('rect',{x:sx,y:sy+SZ*j/B.d,width:SZ,height:SZ/B.d,class:'soft cB'},Lr.mcell));
+  await S.fadeIn(rws,1000); await S.wait(900);
+  S.focus(null);
+  // overlap
+  const ov=[]; for(let i=0;i<A.n;i++) for(let j=0;j<B.n;j++) ov.push(el('rect',{x:sx+SZ*i/A.d,y:sy+SZ*j/B.d,width:SZ/A.d,height:SZ/B.d,class:'cell cO'},Lr.mcell));
+  await S.fadeIn(ov,1200); await S.wait(800);
+  await S.show('work',row(num(A.n,'wa','cA'),opr('·','wm'),num(B.n,'wb','cB'),opr('=','we'),num(A.n*B.n,'wr','cO')),{from:{wa:'lan',wb:'lbn'}});
+  await S.wait(1000);
+  const cellBox=el('rect',{x:sx-6,y:sy-6,width:SZ+12,height:SZ+12,rx:10,class:'grp2',opacity:0},Lr.marks);
+  await S.fadeIn(cellBox,800);
+  await S.show('work2',row(num(A.d,'xa','cA'),opr('·','xm'),num(B.d,'xb','cB'),opr('=','xe'),num(A.d*B.d,'xr')),{from:{xa:'lad',xb:'lbd'}});
+  await S.wait(1000);
+  await S.show('main',MR(frc(num(A.n*B.n,'pn','cO'),num(A.d*B.d,'pd'),'P')),{from:{pn:'wr',pd:'xr'},dur:1300});
+  await S.wait(900);
+  const N=A.n*B.n, D=A.d*B.d, g=gcd(N,D);
+  if(g>1){
+    await S.show('main',MR(frc(row(num(N,'pn','cO'),opr('/','pm','cF'),num(g,'pf','cF')),row(num(D,'pd'),opr('/','pm2','cF'),num(g,'pf2','cF')),'P')));
+    await S.wait(1000);
+    await S.show('main',MR(frc(num(N/g,'pn','cO'),num(D/g,'pd'),'P')));
+  }
+  await shortcut(S,E);
+}
+
+/* ───────── division ───────── */
+async function divCommon(S,E){
+  const START=startTree(E); await S.begin(START);
+  const a=mkF(E.A), b=mkF(E.B), MR=x=>row(START,opr('=','e1'),x);
+  let rhs=()=>row(fT('a2',a,'cA'),opr('/','op2'),fT('b2',b,'cB'));
+  const view=()=>MR(rhs());
+  const L=lcm(a.d,b.d), WA=Math.max(1,Math.ceil(a.n/a.d),Math.ceil(b.n/b.d)), WB=Math.max(1,Math.ceil(b.n/b.d));
+  const uw=Math.min(330,(540-(WA-1)*16)/WA), h=40, yA=262, yB=350, X0=400-(WA*uw+(WA-1)*16)/2;
+  S.cfg('labA',{cx:66,y:yA+28,s:22}); S.cfg('labB',{cx:66,y:yB+28,s:22});
+  S.focus(keysOf('a0',E.A));
+  const mA=S.model({n:a.n,d:a.d,wholes:WA,x0:X0,y:yA,uw,h,cls:'cA'});
+  await S.all(S.show('labA',fT('la',a,'cA'),{from:cp('la','a0',E.A),dur:1300}),S.wait(500).then(()=>S.showModel(mA,1100))); await S.wait(600);
+  S.focus(keysOf('b0',E.B));
+  const mB=S.model({n:b.n,d:b.d,wholes:WB,x0:X0,y:yB,uw,h,cls:'cB'});
+  await S.all(S.show('labB',fT('lb',b,'cB'),{from:cp('lb','b0',E.B),dur:1300}),S.wait(500).then(()=>S.showModel(mB,1100))); await S.wait(700);
+  S.focus(null);
+  await S.show('main',view(),{from:{...cp('a2','a0',E.A),...cp('b2','b0',E.B)}}); await S.wait(900);
+  const ta={F:a,P:'a2',m:mA,lab:'labA',lp:'la',cls:'cA'}, tb={F:b,P:'b2',m:mB,lab:'labB',lp:'lb',cls:'cB'};
+  const wh=[ta,tb].filter(t=>t.F.whole); if(wh.length) await over1Step(S,view,wh);
+  if(L/a.d>1) await scaleStep(S,view,ta,'·',L/a.d,null);
+  if(L/b.d>1) await scaleStep(S,view,tb,'·',L/b.d,null);
+  // same-size pieces: only the counts matter
+  rhs=()=>row(num(a.n,'a2n','cA'),opr('/','op2'),num(b.n,'b2n','cB'));
+  await S.show('main',view(),{dur:1200}); await S.wait(1000);
+  // how many blue groups fit in the orange?
+  let k=0;
+  for(let st=0;st<a.n;st+=b.n,k++){
+    const gh=mB.cells.map(q=>({e:el('rect',{x:q.x,y:q.y,width:q.w,height:q.h,class:'cell cB ghostc'},S.st.L.marks),x:q.x,y:q.y,w:q.w,h:q.h}));
+    await S.moveCells(gh.map((q,i)=>[q,S.slot(mA,st+i)]),1200);
+    const s0=S.slot(mA,st), s1=S.slot(mA,st+b.n-1), inside=Math.min(b.n,a.n-st);
+    const box=el('rect',{x:s0.x+2,y:yA-6,width:s1.x+s1.w-s0.x-4,height:h+12,rx:8,class:'grp',opacity:0},S.st.L.marks);
+    S.cfg('g'+k,{cx:(s0.x+s1.x+s1.w)/2,y:yA-24,s:20});
+    await S.all(S.fadeOut(gh.map(q=>q.e),900),S.fadeIn(box,900),S.show('g'+k,inside===b.n?num(k+1,'gv'+k):frc(inside,b.n,'gf'+k)));
+    await S.wait(600);
+  }
+  await S.wait(500);
+  const q=a.n/b.n;
+  if(Number.isInteger(q)){ rhs=()=>num(q,'a2n'); await S.show('main',view()); }
+  else { rhs=()=>frc(num(a.n,'a2n','cA'),num(b.n,'b2n','cB'),'a2'); await S.show('main',view(),{dur:1200}); await S.wait(800); await finishFrac(S,MR,a.n,b.n,'a2'); }
+}
+
+async function divInverse(S,E){
+  const START=startTree(E); await S.begin(START,{cx:CX,y:250,s:32});
+  const a=mkF(E.A), b=mkF(E.B), MR=x=>row(START,opr('=','e1'),x);
+  const pair=()=>row(fT('a2',a,'cA'),opr('/','op2'),fT('b2',b,'cB'));
+  await S.show('main',MR(pair()),{from:{...cp('a2','a0',E.A),...cp('b2','b0',E.B)}}); await S.wait(800);
+  if(a.whole||b.whole){ a.whole=b.whole=false; await S.show('main',MR(pair())); await S.wait(1000); }
+  // as one big fraction
+  await S.show('main',MR(frc(fT('a2',a,'cA'),fT('b2',b,'cB'),'Q')),{dur:1200}); await S.wait(1000);
+  // expand top and bottom by the flipped bottom fraction
+  const inv=k=>frc(num(b.d,k+'n','cF'),num(b.n,k+'d','cF'),k,'cF');
+  S.focus(keysOf('b2',b)); await S.wait(700);
+  const fl={i1n:'b2d',i1d:'b2n','i1.bar':'b2.bar',i2n:'b2d',i2d:'b2n','i2.bar':'b2.bar'};
+  await S.show('main',MR(frc(row(fT('a2',a,'cA'),opr('·','m1','cF'),inv('i1')),row(fT('b2',b,'cB'),opr('·','m2','cF'),inv('i2')),'Q')),{from:fl,curve:{i1n:36,i1d:-36,i2n:36,i2d:-36},dur:1400});
+  S.focus(null); await S.wait(1200);
+  // bottom: c/d · d/c  →  1
+  S.focus([...keysOf('b2',b),'m2','i2n','i2d','i2.bar']); await S.wait(600);
+  const top=()=>row(fT('a2',a,'cA'),opr('·','m1','cF'),inv('i1'));
+  await S.show('main',MR(frc(top(),frc(row(num(b.n,'b2n','cB'),opr('·','dm'),num(b.d,'i2n','cF')),row(num(b.d,'b2d','cB'),opr('·','dm2'),num(b.n,'i2d','cF')),'b2'),'Q')),{dur:1200});
+  await S.wait(1000);
+  const PB=b.n*b.d;
+  await S.show('main',MR(frc(top(),frc(num(PB,'b2n'),num(PB,'b2d'),'b2'),'Q'))); await S.wait(1000);
+  await S.show('main',MR(frc(top(),num(1,'b2n'),'Q')),{dur:1200}); await S.wait(1200);
+  // top: a/b · d/c
+  S.focus([...keysOf('a2',a),'m1','i1n','i1d','i1.bar']); await S.wait(600);
+  await S.show('main',MR(frc(frc(row(num(a.n,'a2n','cA'),opr('·','nm'),num(b.d,'i1n','cF')),row(num(a.d,'a2d','cA'),opr('·','nm2'),num(b.n,'i1d','cF')),'a2'),num(1,'b2n'),'Q')),{dur:1200});
+  await S.wait(1000);
+  const N=a.n*b.d, D=a.d*b.n;
+  await S.show('main',MR(frc(frc(num(N,'a2n'),num(D,'a2d'),'a2'),num(1,'b2n'),'Q'))); await S.wait(1000);
+  // divided by 1: nothing changes, so the 1 disappears
+  S.focus(['b2n','Q.bar']); await S.wait(1400);
+  S.focus(null);
+  await S.show('main',MR(frc(num(N,'a2n'),num(D,'a2d'),'a2')),{dur:1600}); await S.wait(900);
+  await finishFrac(S,MR,N,D,'a2');
+}
+
+async function divKCF(S,E){
+  const START=startTree(E); await S.begin(START,{cx:CX,y:240,s:36});
+  const a=mkF(E.A), b=mkF(E.B), MR=x=>row(START,opr('=','e1'),x);
+  let mid=()=>row(fT('a2',a,'cA'),opr('/','op2'),fT('b2',b,'cB'));
+  await S.show('main',MR(mid()),{from:{...cp('a2','a0',E.A),...cp('b2','b0',E.B)}}); await S.wait(800);
+  if(a.whole||b.whole){ a.whole=b.whole=false; await S.show('main',MR(mid())); await S.wait(1000); }
+  // keep: the first fraction swells, gives a small shake, and settles back unchanged
+  await S.wait(500); await S.wiggle(keysOf('a2',a)); await S.wait(700);
+  // change: the slash fades into a multiplication dot and turns green
+  mid=()=>row(fT('a2',a,'cA'),opr('·','op2','cF'),fT('b2',b,'cB'));
+  await S.show('main',MR(mid()),{dur:1400}); await S.wait(1000);
+  // flip: the fraction turns over and turns purple (a faint copy stays where it was)
+  const gh=S.ghostKeys(keysOf('b2',b));
+  await S.show('main',MR(row(fT('a2',a,'cA'),opr('·','op2','cF'),frc(num(b.d,'b2d','cO'),num(b.n,'b2n','cO'),'b2','cO'))),{curve:{b2d:-30,b2n:30},dur:1600});
+  await S.wait(1300);
+  await S.fadeOut(gh,900);
+  // multiply across
+  await S.show('main',MR(frc(row(num(a.n,'a2n','cA'),opr('·','nm'),num(b.d,'b2d','cO')),row(num(a.d,'a2d','cA'),opr('·','nm2'),num(b.n,'b2n','cO')),'a2')),{dur:1300});
+  await S.wait(1100);
+  const N=a.n*b.d, D=a.d*b.n;
+  await S.show('main',MR(frc(num(N,'a2n'),num(D,'a2d'),'a2'))); await S.wait(900);
+  await finishFrac(S,MR,N,D,'a2');
+}
+
+
+/* ───────── from the negative-numbers page: its own small engine ───────── */
+const SG=(()=>{
+const NS='http://www.w3.org/2000/svg', CANCEL=Symbol('cancel'), M='−';
+const RM=false;   // animations always play in full, also with reduced motion turned on
+const LY=330, U=30, CX=320, ROWP=150, ROWN=212;
+const X=v=>CX+v*U;
+const RX=/−?\d+|−|\/|[^\d−\/]+/g;
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const sg=v=>v>0?'p':v<0?'n':'z';
+const fmt=(n,lead)=>n<0?(lead?M+(-n):'('+M+(-n)+')'):String(Math.abs(n));
+function kind(w){ if(w==='/') return 'to sl'; if(/^−\d+$/.test(w)) return 'tn'; if(/^\d+$/.test(w)) return /^0+$/.test(w)?'tz':'tp'; return 'to'; }
+function el(tag,attrs,parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+function rich(parent,x,y,str,klass,anchor='middle'){
+  const t=el('text',{x,y,class:klass,'text-anchor':anchor},parent);
+  t.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve');
+  t.style.whiteSpace='pre';
+  const groups=str.split('|').map((gs,gi)=>(gs.match(RX)||[]).map(w=>{
+    const sp=el('tspan',{class:kind(w)},t); sp.textContent=w;
+    if(gi>0) sp.setAttribute('fill-opacity',0); return sp; }));
+  return {el:t,groups,shown:1,nums:groups.flat().filter(s=>/\d/.test(s.textContent))};
+}
+const symD=s=>s>0?'M-7 0H7M0 -7V7':'M-7 0H7';
+
+class Stage{
+  constructor(svg){ this.svg=svg; this.gen=0; this.acc=0; this.pausedAt=null; }
+  now(){ return (this.pausedAt??performance.now())-this.acc; }
+  pause(){ if(this.pausedAt==null) this.pausedAt=performance.now(); }
+  resume(){ if(this.pausedAt!=null){ this.acc+=performance.now()-this.pausedAt; this.pausedAt=null; } }
+  get paused(){ return this.pausedAt!=null; }
+  play(script,instant){
+    this.resume(); this.onplay&&this.onplay();
+    const gen=++this.gen; this.instant=!!instant; this.svg.textContent='';
+    this.L={}; for(const k of ['line','arcs','marks','tok','walk','eq']) this.L[k]=el('g',{},this.svg);
+    return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
+      .finally(()=>{ if(this.gen===gen&&this.onend) this.onend(); });
+  }
+}
+
+class Ctx{
+  constructor(st,gen){ Object.assign(this,{st,gen,pos:0,P:[],N:[],n:1,caps:[],labels:{},eqs:{}}); }
+  /* everything runs on the stage clock, which stands still while paused */
+  run(d,fn){
+    const st=this.st, gen=this.gen;
+    return new Promise((res,rej)=>{
+      if(st.gen!==gen) return rej(CANCEL);
+      if(d<=0){ fn&&fn(1); return res(); }
+      const t0=st.now();
+      const f=()=>{ if(st.gen!==gen) return rej(CANCEL); const t=Math.min(1,(st.now()-t0)/d); fn&&fn(ease(t)); t<1?requestAnimationFrame(f):res(); };
+      requestAnimationFrame(f);
+    });
+  }
+  tw(dur,fn){ return this.run((this.st.instant||RM)?0:dur,fn); }
+  wait(ms){ return this.run(this.st.instant?0:ms,null); }
+  all(...ps){ return Promise.all(ps); }
+
+  /* number line + walker */
+  line(min=-10,max=10,hidden=false){
+    const g=this.st.L.line;
+    el('line',{x1:X(min)-16,x2:X(max)+16,y1:LY,y2:LY,class:'axis'},g);
+    el('path',{d:`M${X(max)+24} ${LY} l-10 -6 v12z`,class:'axhead'},g);
+    el('path',{d:`M${X(min)-24} ${LY} l10 -6 v12z`,class:'axhead'},g);
+    for(let v=min;v<=max;v++){
+      el('line',{x1:X(v),x2:X(v),y1:LY-(v?6:10),y2:LY+(v?6:10),class:v?'tick':'tick0'},g);
+      const t=el('text',{x:X(v),y:LY+32,class:'lab '+sg(v),'text-anchor':'middle'},g);
+      t.textContent=fmt(v,1); if(hidden&&v) t.style.opacity=0; this.labels[v]=t;
+    }
+  }
+  walker(v){ const g=el('g',{},this.st.L.walk); this.Wc=el('circle',{r:9},g); this.W=g; this.pos=v; this.wAt(X(v),LY); this.wcls(); }
+  base(){ this.line(); this.walker(0); }
+  wAt(x,y){ this.W.setAttribute('transform',`translate(${x} ${y})`); }
+  wcls(){ this.W.setAttribute('class','walker '+sg(this.pos)); }
+  reveal(v){ const t=this.labels[v]; if(t) t.style.opacity=1; }
+  showAll(){ Object.values(this.labels).forEach(t=>t.style.opacity=1); }
+  async slideW(to,dur=600){ const x0=X(this.pos); await this.tw(dur,k=>this.wAt(lerp(x0,X(to),k),LY)); this.pos=to; this.wcls(); }
+  async pulse(){ await this.tw(600,k=>this.Wc.setAttribute('r',9+7*Math.sin(Math.PI*k))); }
+  dot(v){ el('circle',{cx:X(v),cy:LY,r:5,class:'rdot '+sg(v)},this.st.L.marks); }
+  dim(){ for(const a of this.st.L.arcs.children) if(!a.dataset.keep) a.style.opacity=.18; }
+
+  /* jump arcs */
+  mkArc(from,to,o={}){
+    const x1=X(from), x2=X(to), side=o.below?1:-1, h=Math.min(64,16+Math.abs(to-from)*8);
+    const mx=(x1+x2)/2, cy=LY+side*2*h;
+    const g=el('g',{class:'arc '+sg(to-from)+(o.ghost?' ghost':'')},this.st.L.arcs);
+    const p=el('path',{class:'a',d:`M${x1} ${LY} Q${mx} ${cy} ${x2} ${LY}`},g);
+    const ang=Math.atan2(LY-cy,x2-mx)*180/Math.PI;
+    const hd=el('path',{class:'h',d:'M2 0 L-10 -6 L-10 6 Z',transform:`translate(${x2} ${LY}) rotate(${ang})`},g);
+    return {g,p,hd,from,to,x1,x2,mx,cy,rot:0};
+  }
+  async drawArc(A,dur,walk){
+    let L=0; try{ L=A.p.getTotalLength(); }catch(e){}
+    if(!L) L=Math.abs(A.x2-A.x1)+2*Math.abs(A.cy-LY);
+    A.p.style.strokeDasharray=L; A.p.style.strokeDashoffset=L; A.hd.style.opacity=0;
+    await this.tw(dur,k=>{
+      A.p.style.strokeDashoffset=L*(1-k);
+      if(walk){ const u=1-k; this.wAt(u*u*A.x1+2*u*k*A.mx+k*k*A.x2, u*u*LY+2*u*k*A.cy+k*k*LY); }
+    });
+    A.p.style.strokeDasharray='none'; A.hd.style.opacity=1;
+  }
+  async hop(to,o={}){
+    const from=this.pos; if(to===from) return;
+    const A=this.mkArc(from,to,o);
+    await this.drawArc(A,o.dur??(360+Math.abs(to-from)*70),true);
+    this.pos=to; this.wcls(); this.reveal(to); return A;
+  }
+  async ghost(from,to){
+    const A=this.mkArc(from,to,{ghost:true}); A.g.dataset.keep=1;
+    await this.fadeIn(A.g,350); return A;
+  }
+  async rotArc(A,dur=1000,walk=false,dir=1){
+    if(!A.copy){
+      const c=A.g.cloneNode(true); c.removeAttribute('transform'); c.style.opacity=''; c.setAttribute('opacity',.4); c.dataset.keep=1;
+      const cp=c.querySelector('.a'); cp.style.strokeDasharray='6 6'; cp.style.strokeDashoffset=0;
+      this.st.L.arcs.insertBefore(c,A.g); A.copy=c;
+    }
+    const r0=A.rot, r1=A.rot+180*dir, dx=A.x2-A.x1; let sw=false;
+    await this.tw(dur,k=>{
+      const r=lerp(r0,r1,k); A.g.setAttribute('transform',`rotate(${r} ${A.x1} ${LY})`);
+      if(!sw&&k>=.5){ sw=true; const c=A.g.getAttribute('class'); A.g.setAttribute('class',c.includes(' p')?c.replace(' p',' n'):c.replace(' n',' p')); }
+      if(walk){ const rad=r*Math.PI/180; this.wAt(A.x1+dx*Math.cos(rad),LY+dx*Math.sin(rad)); }
+    });
+    A.rot=r1;
+  }
+  mini(i,n,dir,flip){
+    const x=CX+(i-(n-1)/2)*46, y=240;
+    const g=el('g',{class:'arc mini '+sg(dir),transform:`translate(${x} ${y}) scale(${dir} ${flip?-1:1})`},this.st.L.marks);
+    el('path',{class:'a',d:'M-15 4 Q0 -18 13 4'},g);
+    el('path',{class:'h',d:'M16 6 L6 -1 L9 9 Z'},g);
+    return this.fadeIn(g,250);
+  }
+
+  /* tokens */
+  colX(c){ return CX+(c-(this.n-1)/2)*36; }
+  tok(sign,x,y){
+    const g=el('g',{class:'tok '+sg(sign)},this.st.L.tok);
+    el('circle',{r:14},g); const sym=el('path',{class:'sym',d:symD(sign)},g);
+    const T={g,sym,sign,x,y,s:0,sx:1}; this.setT(T); return T;
+  }
+  setT(T){ T.g.setAttribute('transform',`translate(${T.x} ${T.y}) scale(${T.s*T.sx} ${T.s})`); }
+  pop(T,dur=240){ return this.tw(dur,k=>{ T.s=k; this.setT(T); }); }
+  async popAfter(T,ms){ await this.wait(ms); await this.pop(T); }
+  move(T,x,y,dur=420){ const x0=T.x,y0=T.y; return this.tw(dur,k=>{ T.x=lerp(x0,x,k); T.y=lerp(y0,y,k); this.setT(T); }); }
+  drop(T){ T.g.remove(); for(const arr of [this.P,this.N]){ const i=arr.indexOf(T); if(i>=0) arr.splice(i,1); } }
+  async addTok(sign,o={}){
+    const arr=sign>0?this.P:this.N, col=o.col??arr.length;
+    const T=this.tok(sign,this.colX(col),sign>0?ROWP:ROWN); T.col=col; arr.push(T);
+    await this.all(this.pop(T), o.hop===false?null:this.hop(this.pos+sign,{dur:380}));
+    return T;
+  }
+  async take(T,dur=420){ const y0=T.y; await this.tw(dur,k=>{ T.y=y0-48*k; this.setT(T); T.g.setAttribute('opacity',1-k); }); this.drop(T); }
+  async fadeTok(T,dur=350){ await this.tw(dur,k=>T.g.setAttribute('opacity',1-k)); this.drop(T); }
+  async flip(T,dur=900){
+    const y0=T.y, y1=T.sign>0?ROWN:ROWP; let sw=false;
+    await this.tw(dur,k=>{
+      T.sx=Math.max(.04,Math.abs(Math.cos(Math.PI*k)));
+      if(!sw&&k>=.5){ sw=true; T.sign=-T.sign; T.g.setAttribute('class','tok '+sg(T.sign)); T.sym.setAttribute('d',symD(T.sign)); }
+      T.y=lerp(y0,y1,k); this.setT(T);
+    });
+    T.sx=1; this.setT(T);
+  }
+  async annihilate(A,B){
+    const mx=(A.x+B.x)/2, my=(A.y+B.y)/2;
+    await this.all(this.move(A,mx,my,320),this.move(B,mx,my,320));
+    const z=el('text',{x:mx,y:my+8,class:'zero','text-anchor':'middle','font-size':18},this.st.L.tok); z.textContent='0';
+    await this.tw(420,k=>{ A.s=B.s=1-k; this.setT(A); this.setT(B); z.setAttribute('opacity',Math.sin(Math.PI*k)); z.setAttribute('font-size',18+16*k); });
+    z.remove(); this.drop(A); this.drop(B);
+  }
+  async cancelPairs(){
+    const P=[...this.P].sort((a,b)=>a.col-b.col), N=[...this.N].sort((a,b)=>a.col-b.col);
+    for(let i=0;i<Math.min(P.length,N.length);i++) await this.annihilate(P[i],N[i]);
+  }
+  async compact(dur=450){
+    const P=[...this.P].sort((a,b)=>a.col-b.col), N=[...this.N].sort((a,b)=>a.col-b.col);
+    this.n=Math.max(P.length,N.length,1); const ps=[];
+    P.forEach((T,i)=>{ T.col=i; ps.push(this.move(T,this.colX(i),ROWP,dur)); });
+    N.forEach((T,i)=>{ T.col=i; ps.push(this.move(T,this.colX(i),ROWN,dur)); });
+    await Promise.all(ps);
+  }
+  async zpair(col,dur=260){
+    const x=this.colX(col), a=this.tok(1,x,ROWP), b=this.tok(-1,x,ROWN);
+    a.col=b.col=col; this.P.push(a); this.N.push(b);
+    const cap=el('rect',{x:x-21,y:ROWP-21,width:42,height:ROWN-ROWP+42,rx:21,class:'cap',opacity:0},this.st.L.marks);
+    const z=el('text',{x,y:(ROWP+ROWN)/2+6,class:'capz','text-anchor':'middle',opacity:0},this.st.L.marks); z.textContent='0';
+    this.caps.push(cap,z);
+    await this.all(this.pop(a,dur),this.pop(b,dur),this.tw(dur,k=>{ cap.setAttribute('opacity',k); z.setAttribute('opacity',k); }));
+  }
+  async fadeCaps(){ if(this.caps.length){ await this.fadeOut(this.caps); this.caps=[]; } }
+  box(c0,c1,y,cls){ return el('rect',{x:this.colX(c0)-21,y:y-21,width:this.colX(c1)-this.colX(c0)+42,height:42,rx:21,class:'box '+cls,opacity:0},this.st.L.marks); }
+
+  /* text */
+  eq(line,str){ if(this.eqs[line]) this.eqs[line].el.remove(); this.eqs[line]=rich(this.st.L.eq,CX,line?92:52,str,line?'eq2':'eq'); }
+  rich(x,y,str,cls,anchor){ return rich(this.st.L.eq,x,y,str,cls,anchor); }
+  next(R,dur=650){ const sp=R.groups[R.shown++]; if(!sp) return Promise.resolve(); return this.tw(dur,k=>sp.forEach(s=>s.setAttribute('fill-opacity',k))); }
+  eqNext(line,dur){ return this.next(this.eqs[line],dur); }
+  focus(line,k,to,text){
+    const R=this.eqs[line]; R.nums.forEach((s,i)=>s.classList.toggle('dimmed',k!==null&&i!==k));
+    return k===null||!to?Promise.resolve():this.floatNum(R,k,to,text);
+  }
+  floatNum(R,k,to,text){ return this.floatSpan(R,R.nums[k],to,text); }
+  async floatSpan(R,sp,to,text){
+    const y0=+R.el.getAttribute('y'), fs=R.el.classList.contains('eq')?34:22; let x=CX;
+    try{ const n=sp.getNumberOfChars(); x=(sp.getStartPositionOfChar(0).x+sp.getEndPositionOfChar(n-1).x)/2; }catch(e){}
+    const t=el('text',{x,y:y0,class:'float '+(text?'tz':kind(sp.textContent)),'text-anchor':'middle','font-size':fs,opacity:0},this.st.L.eq);
+    t.textContent=text??sp.textContent;
+    await this.tw(1000,u=>{
+      t.setAttribute('x',lerp(x,to.x,u)); t.setAttribute('y',lerp(y0,to.y,u)); t.setAttribute('font-size',lerp(fs,28,u));
+      t.setAttribute('opacity',.55*(u<.8?Math.min(1,u*6):(1-u)/.2));
+    });
+    t.remove();
+  }
+  floatMinus(s){ const R=this.eqs[0], sp=R.groups[0][0]; return this.all(this.floatSpan(R,sp,this.tokTo(s)),this.floatSpan(R,sp,this.lineTo(1.5*s))); }
+  tokTo(s){ return {x:CX,y:(s>0?ROWP:ROWN)+10}; }
+  lineTo(v=0){ return {x:X(v),y:LY-28}; }
+  async sum(v){
+    const y=(ROWP+ROWN)/2+9, old=this.sumN, ps=[];
+    if(!this.sumEq){
+      this.sumEq=rich(this.st.L.eq,546,y,'=','stepsum','start').el;
+      ps.push(this.fadeIn(this.sumEq,900));
+    }
+    if(old&&old.v===v){
+      // same value again: a slow, soft breath instead of a swap
+      await this.tw(1200,k=>old.R.el.setAttribute('opacity',1-.65*Math.sin(Math.PI*k)));
+      return;
+    }
+    const R=rich(this.st.L.eq,574,y,fmt(v,1),'stepsum','start'); R.el.setAttribute('opacity',0);
+    this.sumN={v,R};
+    ps.push(this.tw(1000,k=>{
+      R.el.setAttribute('opacity',k); R.el.setAttribute('transform',`translate(0 ${8*(1-k)})`);
+      if(old){ old.R.el.setAttribute('opacity',1-k); old.R.el.setAttribute('transform',`translate(0 ${-8*k})`); }
+    }));
+    await Promise.all(ps);
+    if(old) old.R.el.remove();
+  }
+  async swapEq(line,str,dur=700){
+    const R=this.eqs[line]; this.eq(line,str); const N=this.eqs[line];
+    if(R){ N.el.setAttribute('opacity',0); this.st.L.eq.appendChild(R.el); }
+    await this.tw(dur,k=>{ N.el.setAttribute('opacity',k); if(R) R.el.setAttribute('opacity',1-k); });
+    if(R) R.el.remove();
+  }
+  spanX(sp){ try{ const n=sp.getNumberOfChars(); return (sp.getStartPositionOfChar(0).x+sp.getEndPositionOfChar(n-1).x)/2; }catch(e){ return CX; } }
+  async morph(line,str,map){
+    // build the new equation hidden, glide mapped numbers into place, fade the rest
+    const R=this.eqs[line], N=rich(this.st.L.eq,CX,line?92:52,str,line?'eq2':'eq');
+    N.groups.flat().forEach(s=>s.setAttribute('fill-opacity',0));
+    const movers=map.map(([i,j])=>{
+      const from=R.nums[i], to=N.nums[j], x0=this.spanX(from), x1=this.spanX(to);
+      const t=el('text',{x:x0,y:R.el.getAttribute('y'),class:R.el.getAttribute('class'),'text-anchor':'middle'},this.st.L.eq);
+      const s=el('tspan',{class:from.getAttribute('class').replace(' dimmed','')},t); s.textContent=from.textContent;
+      return {t,x0,x1,to};
+    });
+    map.forEach(([i])=>R.nums[i].setAttribute('fill-opacity',0)); this.eqs[line]=N;
+    await this.tw(1100,k=>{ movers.forEach(m=>m.t.setAttribute('x',lerp(m.x0,m.x1,k))); R.el.setAttribute('opacity',Math.max(0,1-k*1.6)); });
+    R.el.remove();
+    const moved=movers.map(m=>m.to);
+    moved.forEach(s=>s.setAttribute('fill-opacity',1)); movers.forEach(m=>m.t.remove());
+    const rest=N.groups[0].filter(s=>!moved.includes(s));
+    await this.tw(800,k=>rest.forEach(s=>s.setAttribute('fill-opacity',k)));
+  }
+  fadeIn(els,dur=300){ els=[].concat(els); els.forEach(e=>e.setAttribute('opacity',0)); return this.tw(dur,k=>els.forEach(e=>e.setAttribute('opacity',k))); }
+  async fadeOut(els,dur=300){ els=[].concat(els); await this.tw(dur,k=>els.forEach(e=>e.setAttribute('opacity',1-k))); els.forEach(e=>e.remove()); }
+}
+
+/* ───────── scenes ───────── */
+
+async function fLine(S){
+  S.line(-8,8,true); S.walker(0); S.n=5; S.eq(0,'0');
+  await S.wait(600);
+  for(let i=1;i<=5;i++){ await S.addTok(1); await S.swapEq(0,String(i),500); }
+  await S.wait(900);
+  await S.all(...[...S.P].map(T=>S.fadeTok(T)), S.slideW(0,600),S.swapEq(0,'0',600)); S.dim();
+  await S.wait(600);
+  for(let i=1;i<=5;i++){ await S.addTok(-1); await S.swapEq(0,M+i,500); }
+  await S.wait(700); S.showAll();
+}
+
+async function fFlip(S){
+  S.base(); S.n=3; S.eq(0,'3');
+  await S.wait(500);
+  const ts=[0,1,2].map(i=>{ const T=S.tok(1,S.colX(i),ROWP); T.col=i; S.P.push(T); return T; });
+  const A=S.mkArc(0,3);
+  await S.all(S.drawArc(A,800,true),...ts.map((T,i)=>S.popAfter(T,i*150)));
+  S.pos=3; S.wcls();
+  await S.wait(800);
+  await S.morph(0,`${M}(3)| = ${M}3`,[[0,0]]); await S.wait(700);
+  await S.floatMinus(1);
+  await S.all(S.rotArc(A,1300,true,1),...ts.map(T=>S.flip(T,1300)));
+  S.pos=-3; S.wcls(); S.wAt(X(-3),LY);
+  await S.eqNext(0); await S.wait(1100);
+  await S.morph(0,`${M}(${M}3)| = 3`,[[1,0]]); await S.wait(700);
+  await S.floatMinus(-1);
+  await S.all(S.rotArc(A,1300,true,-1),...ts.map(T=>S.flip(T,1300)));
+  S.pos=3; S.wcls(); S.wAt(X(3),LY);
+  await S.eqNext(0); await S.pulse();
+}
+
+async function sAdd(S,a,b){
+  const r=a+b, A=Math.abs(a), B=Math.abs(b), sa=Math.sign(a), sb=Math.sign(b);
+  S.base(); S.eq(0,`${fmt(a,1)} + ${fmt(b)}| = ${fmt(r,1)}`);
+  S.n=sa===sb?A+B:Math.max(A,B);
+  await S.wait(500); await S.focus(0,0,S.tokTo(sa));
+  for(let i=0;i<A;i++) await S.addTok(sa);
+  await S.wait(300); await S.sum(a); await S.wait(700);
+  S.dim(); await S.focus(0,1,S.tokTo(sb));
+  for(let i=0;i<B;i++) await S.addTok(sb);
+  await S.wait(300); await S.sum(r); await S.wait(600); S.focus(0,null);
+  if(S.P.length&&S.N.length){ await S.cancelPairs(); await S.wait(200); await S.compact(); await S.sum(r); }
+  await S.wait(300); await S.eqNext(0); await S.pulse();
+}
+
+async function sSub(S,a,b){
+  const r=a-b, A=Math.abs(a), B=Math.abs(b), sa=Math.sign(a), sb=Math.sign(b);
+  S.base();
+  S.eq(0,`${fmt(a,1)} − ${fmt(b)}| = ${fmt(r,1)}`);
+  S.eq(1,`|${fmt(a,1)} + ${fmt(-b)} = ${fmt(r,1)}`);
+  const need=Math.max(0,B-(sa===sb?A:0)); S.n=A+need;
+  await S.wait(500); await S.focus(0,0,S.tokTo(sa));
+  for(let i=0;i<A;i++) await S.addTok(sa);
+  await S.wait(300); await S.sum(a); await S.wait(800); S.dim();
+  if(need){
+    for(let k=0;k<need;k++){ await S.zpair(A+k); await S.wait(160); }
+    await S.wait(300); await S.sum(a); await S.wait(1000);
+  }
+  await S.fadeCaps();
+  await S.focus(0,1,S.tokTo(sb),M+fmt(b));
+  const victims=[...(sb>0?S.P:S.N)].sort((x,y)=>y.col-x.col).slice(0,B);
+  for(const T of victims){ await S.all(S.take(T),S.hop(S.pos-sb,{dur:400})); }
+  await S.wait(350); S.focus(0,null); await S.compact(); await S.sum(r);
+  await S.eqNext(0); await S.pulse(); await S.wait(500); await S.eqNext(1);
+}
+
+async function sMul(S,a,b){
+  const r=a*b, A=Math.abs(a), B=Math.abs(b), sb=Math.sign(b), GAP=.7;
+  const col=(g,i)=>g*(B+GAP)+i, rowY=sb>0?ROWP:ROWN;
+  S.n=A*B+(A-1)*GAP; S.base();
+  S.eq(0,`${fmt(a,1)} · ${fmt(b)}| = ${fmt(r,1)}`);
+  if(a>0){
+    S.eq(1,'|'+Array.from({length:A},(_,g)=>(g?' + ':'')+fmt(b,g===0)).join('|')+`| = ${fmt(r,1)}`);
+    await S.wait(500); await S.focus(0,1,{x:CX,y:rowY+10});
+    for(let g=0;g<A;g++){
+      const bx=S.box(col(g,0),col(g,B-1),rowY,sg(b));
+      const lab=S.rich((S.colX(col(g,0))+S.colX(col(g,B-1)))/2,rowY+44,'|'+(g+1),'glabel','middle');
+      const ps=[];
+      for(let i=0;i<B;i++){ const T=S.tok(sb,S.colX(col(g,i)),rowY); T.col=col(g,i); (sb>0?S.P:S.N).push(T); ps.push(S.popAfter(T,i*90)); }
+      await S.all(...ps,S.fadeIn(bx),S.next(lab),S.hop(S.pos+b,{dur:650}),S.eqNext(1));
+      await S.sum(b*(g+1)); await S.wait(350);
+    }
+    S.focus(0,null); await S.wait(300); await S.all(S.eqNext(1),S.eqNext(0)); await S.pulse();
+  } else {
+    S.eq(1,'|0'+Array.from({length:A},()=>`| − ${fmt(b)}`).join('')+`| = ${fmt(r,1)}`);
+    await S.wait(500); await S.eqNext(1);
+    for(let g=0;g<A;g++) for(let i=0;i<B;i++) await S.zpair(col(g,i),170);
+    await S.wait(300); await S.sum(0); await S.wait(600);
+    await S.focus(0,1,S.lineTo(b/2));
+    const G=await S.ghost(0,b); await S.wait(600);
+    await S.focus(0,0,S.lineTo(0)); await S.rotArc(G,1100); await S.wait(500);
+    await S.fadeCaps();
+    for(let g=0;g<A;g++){
+      const lo=col(g,0)-.01, hi=col(g,B-1)+.01;
+      const victims=(sb>0?S.P:S.N).filter(T=>T.col>=lo&&T.col<=hi);
+      const bx=S.box(col(g,0),col(g,B-1),rowY,sg(b));
+      const lab=S.rich((S.colX(col(g,0))+S.colX(col(g,B-1)))/2,ROWN+44,'|'+M+(g+1),'glabel','middle');
+      await S.all(S.fadeIn(bx),S.next(lab)); await S.wait(250);
+      await S.all(...victims.map(T=>S.take(T)),S.hop(S.pos-b,{below:true,dur:650}),S.fadeOut(bx),S.eqNext(1));
+      await S.sum(-b*(g+1)); await S.wait(300);
+    }
+    await S.wait(300); S.focus(0,null);
+    await S.fadeOut([...S.st.L.eq.querySelectorAll('.glabel')]);
+    await S.compact(); await S.all(S.eqNext(1),S.eqNext(0)); await S.pulse();
+  }
+}
+
+
+async function sDiv(S,a,b){
+  const q=a/b, Q=Math.abs(q);
+  S.base();
+  S.eq(0,`${fmt(a,1)} / ${fmt(b)}| = ${fmt(q,1)}`);
+  S.eq(1,`|${fmt(q,1)} · ${fmt(b)} = ${fmt(a,1)}`);
+  const fg=el('g',{class:'flag '+sg(a)},S.st.L.marks);
+  el('line',{x1:X(a),x2:X(a),y1:LY-4,y2:LY-62},fg); el('path',{d:`M${X(a)} ${LY-62} l18 8 l-18 8z`},fg);
+  const C=el('text',{x:CX,y:196,class:'count tz','text-anchor':'middle'},S.st.L.eq); C.textContent='0';
+  await S.fadeIn(fg,400); await S.wait(300); await S.focus(0,0,S.lineTo(a)); await S.wait(300);
+  await S.focus(0,1,S.lineTo(b/2));
+  let flip=false;
+  if(q<0){
+    const G=await S.ghost(0,b);
+    const cx=el('text',{x:X(b)+(b>0?14:-14),y:LY-40,class:'cross','text-anchor':'middle'},S.st.L.marks); cx.textContent='✕';
+    await S.fadeIn(cx,300); await S.wait(700);
+    await S.fadeOut(cx,250); await S.rotArc(G,1100); await S.wait(450); flip=true;
+  }
+  const step=flip?-b:b;
+  for(let k=1;k<=Q;k++){
+    await S.all(S.hop(S.pos+step,{below:flip,dur:650}),S.mini(k-1,Q,Math.sign(step),flip));
+    C.textContent=fmt(flip?-k:k,1); C.setAttribute('class','count '+(flip?'tn':'tp'));
+    await S.wait(300);
+  }
+  S.focus(0,null); await S.eqNext(0); await S.pulse(); await S.wait(600); await S.eqNext(1);
+}
+
+return {Stage,Ctx,sAdd,sMul,kind,RX};
+})();
+
+/* ───────── from the number-sets page ───────── */
+/* ───────── number sets ───────── */
+const CY=226, WX=190, WY=626, CHY=500;
+const GL={R:'ℝ',Q:'ℚ',Z:'ℤ',W:'𝕎',N:'ℕ'}, SETS=['R','Q','Z','W','N'];
+// with 𝕎, zero is not a natural number but a whole number
+const WM=false;
+const order=wm=>wm?['R','Q','Z','W','N']:['R','Q','Z','N'];
+
+// the numbers to sort: whole numbers, negatives, fractions (some whole in disguise), decimals, roots and π
+const NUMS=[
+  {k:'f',a:7,b:10,x:'0.7'},{k:'d',x:'0.67'},{k:'i',v:-9},{k:'i',v:11},{k:'p',x:'3.14159265'}
+].map((E,i)=>({...E,id:i}));
+const isRat=E=>E.k==='i'||E.k==='f'||E.k==='d'||(E.k==='r'&&Number.isInteger(Math.sqrt(E.n)));
+const isInt=E=>E.k==='i'||(E.k==='f'&&E.a%E.b===0)||(E.k==='r'&&Number.isInteger(Math.sqrt(E.n)));
+const iv=E=>E.k==='i'?E.v:E.k==='f'?E.a/E.b:Math.sqrt(E.n);
+// each test in turn; the number stops in the last set it got into
+function classify(E,wm){
+  const res=[isRat(E)]; if(res[0]) res.push(isInt(E));
+  if(res[1]) res.push(iv(E)>=0);
+  if(wm&&res[2]) res.push(iv(E)!==0);
+  let n=0; while(n<res.length&&res[n]) n++;
+  return {res,n,reg:order(wm)[n]};
+}
+
+/* ───────── numbers as trees ───────── */
+function dec(str,P,cls=''){
+  const neg=str[0]==='-', s=neg?str.slice(1):str, [a,b]=s.split('.'), out=[];
+  if(neg) out.push(num('−',P+'m',cls));
+  [...a].forEach((c,j)=>out.push(num(c,P+'i'+j,cls)));
+  if(b!=null){ out.push(dmk(P+'p',cls)); [...b].forEach((c,j)=>out.push(num(c,P+'d'+j,cls))); }
+  return row(out);
+}
+const decKeys=(str,P)=>[...(str.split('.')[1]||'')].map((_,j)=>P+'d'+j);
+const intT=(v,P)=>v<0?row(num('−',P+'m'),num(-v,P+'a')):num(v,P+'a');
+function tok(E,P){
+  if(E.k==='i') return intT(E.v,P);
+  if(E.k==='f') return row(E.a<0?num('−',P+'m'):null,frc(num(Math.abs(E.a),P+'a'),num(E.b,P+'b'),P+'f'));
+  if(E.k==='d') return row(dec(E.x,P),E.e?num('…',P+'e'):null);
+  if(E.k==='r') return rt(num(E.n,P+'a'),P+'r');
+  return num('π',P+'a','pi');
+}
+const ds=(t,key)=>num(t,key,'ds');
+
+/* ───────── the picture: where everything stands ───────── */
+// each oval: left edge, right edge, half height; the inner ones lean to the right so each set keeps room on the left
+const OV={R:[12,708,208],Q:[128,694,182],Z:[316,680,154],W:[436,666,124],N:[492,652,92]};
+const leftX=(o,y)=>{ const d=(y-o.cy)/o.ry; return o.cx-o.rx*Math.sqrt(Math.max(0,1-d*d)); };
+// the place of every number, set by set
+const SLOT={
+  R:[[70,236]],
+  Q:[[212,194],[238,288]],
+  Z:[[378,236]],
+  W:[[464,236]],
+  N0:[[551,240]],
+  N1:[[572,240]],
+};
+// the name of each set, at the top of its own part
+const LAB0={R:[100,128],Q:[272,104],Z:[410,122],N:[551,150]}, LAB1={R:[100,128],Q:[272,104],Z:[410,122],W:[480,165],N:[572,160]};
+function geo(wm){
+  const g={ov:{},lab:{},ch:{},ar:[],slot:{}};
+  for(const k of SETS){ let [l,r,ry]=OV[k]; if(!wm&&k==='N') [l,r,ry]=OV.W; g.ov[k]={cx:(l+r)/2,cy:CY,rx:(r-l)/2,ry,o:(k==='W'&&!wm)?0:1}; }
+  const ord=order(wm);
+  const LB=wm?LAB1:LAB0; ord.forEach(k=>{ g.lab[k]={x:LB[k][0],y:LB[k][1]+11,o:1}; });
+  if(!wm) g.lab.W={...g.lab.N,o:0};
+  // the chain of tests: ℝ → ℚ → ℤ → (𝕎 →) ℕ
+  const xs=wm?{R:88,Q:224,Z:360,W:496,N:632}:{R:120,Q:280,Z:440,W:600,N:600};
+  for(const k of SETS) g.ch[k]={x:xs[k],o:(k==='W'&&!wm)?0:1};
+  const pairs=[['R','Q'],['Q','Z'],['Z','W'],['W','N']];
+  g.ar=pairs.map(([a,b],i)=>({x1:xs[a]+26,x2:Math.max(xs[a]+26,xs[b]-26),o:i===3&&!wm?0:1}));
+  const cnt={};
+  NUMS.forEach(E=>{ const r=classify(E,wm).reg, key=r==='N'?(wm?'N1':'N0'):r; cnt[key]=cnt[key]||0; const [x,y]=SLOT[key][cnt[key]++]; g.slot[E.id]={x,y}; });
+  return g;
+}
+// blend two layouts (numbers only)
+function mixG(a,b,t){ if(typeof a==='number') return lerp(a,b,t); const o=Array.isArray(a)?[]:{}; for(const k in a) o[k]=mixG(a[k],b[k],t); return o; }
+
+/* ───────── the stage keeps its sets and the numbers in them ───────── */
+class NStage extends Stage{
+  constructor(svg){ super(svg); this.L={}; for(const k of ['sets','placed','chain','marks','eq','fx']) this.L[k]=el('g',{},svg); }
+  clearWork(){ for(const k of ['marks','eq','fx']) this.L[k].textContent=''; }
+  play(script){
+    this.resume(); this.onplay&&this.onplay(true);
+    const gen=++this.gen; this.instant=false; this.clearWork();
+    return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
+      .finally(()=>{ if(this.gen===gen&&this.onend) this.onend(); });
+  }
+  stop(){ this.resume(); this.gen++; this.clearWork(); }
+}
+const SC={ov:{},lab:{},ch:{},ar:[],ic:[],tok:new Map()};
+let GEO=geo(WM);
+function buildScene(st){
+  const L=st.L;
+  for(const k of SETS){ SC.ov[k]=el('ellipse',{class:'ov'},L.sets); }
+  for(const k of SETS){ SC.lab[k]=el('text',{class:'slab','text-anchor':'middle','font-size':30},L.sets); SC.lab[k].textContent=GL[k]; }
+  for(const k of SETS){ SC.ch[k]=el('text',{class:'clet','text-anchor':'middle','font-size':32,y:CHY},L.chain); SC.ch[k].textContent=GL[k]; }
+  for(let i=0;i<4;i++){ SC.ar.push(el('path',{class:'car'},L.chain)); SC.ic.push(el('g',{class:'cic'},L.chain)); }
+  drawIcons(); applyG(GEO);
+}
+// above each arrow, the test it stands for: a fraction, no decimals, not negative, not zero
+function drawIcons(){
+  const T=[frc(V('a'),V('b')),row(dmk(),num('?')),row(opr('≥'),num(0)),row(opr('≠'),num(0))];
+  T.forEach((t,i)=>{ const g=SC.ic[i]; g.textContent=''; const Lt=lay(t,19); g._w=Lt.w; Lt.leaves.forEach(l=>mkLeaf(g,shift(l,-Lt.w/2,-12-Lt.desc))); });
+}
+function applyG(g){
+  for(const k of SETS){ const o=g.ov[k], e=SC.ov[k]; e.setAttribute('cx',o.cx); e.setAttribute('cy',o.cy); e.setAttribute('rx',o.rx); e.setAttribute('ry',o.ry); e.setAttribute('opacity',o.o);
+    const b=g.lab[k]; SC.lab[k].setAttribute('x',b.x); SC.lab[k].setAttribute('y',b.y); SC.lab[k].setAttribute('opacity',b.o);
+    SC.ch[k].setAttribute('x',g.ch[k].x); SC.ch[k].setAttribute('opacity',g.ch[k].o); }
+  g.ar.forEach((a,i)=>{ const y=CHY-11, h=6; SC.ar[i].setAttribute('d',`M${a.x1} ${y}L${a.x2} ${y}M${a.x2-h} ${y-h}L${a.x2} ${y}L${a.x2-h} ${y+h}`); SC.ar[i].setAttribute('opacity',a.o);
+    SC.ic[i].setAttribute('transform',`translate(${(a.x1+a.x2)/2} ${CHY-11})`); SC.ic[i].setAttribute('opacity',a.o); });
+  for(const [id,e] of SC.tok){ const s=g.slot[id]; e.setAttribute('transform',`translate(${s.x} ${s.y})`); }
+}
+// a number in its set, drawn around its own middle
+const TS=22;
+function tokLeaves(E,P,s){ const Lt=lay(tok(E,P),s); return Lt.leaves.map(l=>shift(l,-Lt.w/2,(Lt.asc-Lt.desc)/2)); }
+function putTok(st,E){
+  let e=SC.tok.get(E.id); if(e) e.remove();
+  e=el('g',{},st.L.placed); tokLeaves(E,'k',TS).forEach(l=>mkLeaf(e,l));
+  const s=GEO.slot[E.id]; e.setAttribute('transform',`translate(${s.x} ${s.y})`); SC.tok.set(E.id,e); return e;
+}
+function clearHi(){ for(const k of SETS) SC.ov[k].classList.remove('hi'); SC.ar.forEach(a=>a.classList.remove('act')); SC.ic.forEach(a=>a.classList.remove('act')); }
+const hiSet=k=>{ for(const j of SETS) SC.ov[j].classList.toggle('hi',j===k); };
+const actTest=(i,on)=>{ SC.ar[i].classList.toggle('act',on); SC.ic[i].classList.toggle('act',on); };
+
+/* ───────── marks: a tick for a pass, a cross for a fail, drawn like a pen stroke ───────── */
+function mark(S,ok,x,y){
+  const d=ok?`M${x} ${y}l9 10l17 -22`:`M${x+2} ${y-10}l18 18M${x+20} ${y-10}l-18 18`;
+  const e=el('path',{d,class:'mk '+(ok?'ok':'no'),pathLength:1,'stroke-dasharray':'1 2','stroke-dashoffset':1},S.st.L.marks);
+  return S.tw(700,t=>e.setAttribute('stroke-dashoffset',1-t)).then(()=>e);
+}
+const endX=tree=>WX+W(tree,34)+26;
+
+/* ───────── the tests ───────── */
+const eq_=k=>opr('=',k);
+// 1 · can it be written as a fraction?
+async function testQ(S,E,sub){
+  if(E.k==='i'){ const t=row(sub,eq_('q='),E.v<0?num('−','qm'):null,frc(num(Math.abs(E.v),'qa'),num(1,'qb'),'qf'));
+    await S.show('w',t,{from:{qm:'sm',qa:'sa'},dur2:1100}); await S.wait(500); return [t,true]; }
+  if(E.k==='f'){ await S.wiggle(['sm','sa','sb','sf.bar'],1600); await S.wait(200); return [sub,true]; }
+  if(E.per){ const ul=[], y=WY+9, s=34;
+    const seg=async(j0,j1)=>{ const x1=S.cur.get('sd'+j0).spec.x-.29*s, x2=S.cur.get('sd'+j1).spec.x+.29*s;
+      const e=el('path',{d:`M${x1} ${y}L${x2} ${y}`,class:'ul',pathLength:1,'stroke-dasharray':'1 2','stroke-dashoffset':1},S.st.L.marks); ul.push(e);
+      await S.tw(900,t=>e.setAttribute('stroke-dashoffset',1-t)); };
+    await S.wait(300); await seg(0,E.per-1); await S.wait(400);
+    const n=E.x.split('.')[1].length; await seg(E.per,n-1); await S.wait(500); await S.glow('se',1000);
+    // so it is a fraction after all
+    const t=row(sub,eq_('q='),E.a<0?num('−','qm'):null,frc(num(Math.abs(E.a),'qa'),num(E.b,'qb'),'qf'));
+    await S.show('w',t,{fade:900}); await S.wait(400); return [t,true,ul]; }
+  if(E.k==='d'){ const [a,b]=E.x.replace('-','').split('.'), digs=(a+b).replace(/^0+/,''), from={qm:'sm'};
+    // the digits of the numerator come from the digits of the decimal
+    const all=[...a].map((_,j)=>'si'+j).concat([...b].map((_,j)=>'sd'+j)), off=all.length-digs.length;
+    const nu=row([...digs].map((c,j)=>{ from['qn'+j]=all[off+j]; return num(c,'qn'+j); }));
+    const t=row(sub,eq_('q='),E.x[0]==='-'?num('−','qm'):null,frc(nu,num(10**b.length,'qb'),'qf'));
+    await S.show('w',t,{from,dur2:1200}); await S.wait(500); return [t,true]; }
+  if(isRat(E)){ const r=Math.sqrt(E.n), t1=row(sub,eq_('q='),num(r,'qv')), t2=row(t1,eq_('q2'),frc(num(r,'qa'),num(1,'qb'),'qf'));
+    await S.show('w',t1,{fade:800}); await S.wait(700);
+    await S.show('w',t2,{from:{qa:'qv'},dur2:1100}); await S.wait(500); return [t2,true]; }
+  // a root or π: the decimals go on and on
+  const [a,b]=E.x.split('.'); let t;
+  for(let j=0;j<=b.length;j++){ t=row(sub,eq_('q='),dec(j?a+'.'+b.slice(0,j):a,'x')); await S.show('w',t,{fade:j?320:700}); await S.wait(j?90:300); }
+  t=row(t,num('…','xe')); await S.show('w',t,{fade:600}); await S.wait(200); await S.glow('xe',1200);
+  return [t,false];
+}
+// the small decimal mark swells more than a digit would while it pulses red
+function pulseMark(S,key,dur=2400){
+  const c=S.cur.get(key); if(!c) return Promise.resolve(); const cx=c.spec.x, cy=c.spec.y-.06*c.spec.s;   // the mark sits on the baseline
+  return S.tw(dur,t=>{ const p=Math.sin(Math.PI*((t*2)%1)), k=1+.9*p;
+    c.el.style.fill=t>=1?'':`color-mix(in srgb, var(--cR) ${Math.round(p*100)}%, var(--ink))`;
+    c.el.setAttribute('transform',t>=1?'':`translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`); },true);
+}
+// 2 · written as a decimal, is there a decimal mark?
+async function testZ(S,E,sub){
+  if(isInt(E)){
+    if(E.k==='i'){ await S.wait(300); await S.wiggle(['sm','sa'],1400); return [sub,true]; }
+    const t=row(sub,eq_('z='),intT(iv(E),'x'));
+    await S.show('w',t,{fade:900}); await S.wait(400); await S.wiggle(['xm','xa'],1400); return [t,true]; }
+  if(E.k==='d'){ await S.wait(300); await pulseMark(S,'sp'); return [sub,false]; }
+  const t=row(sub,eq_('z='),dec(E.x,'x'),E.e?num('…','xe'):null);
+  await S.show('w',t,{fade:900}); await S.wait(500); await pulseMark(S,'xp'); return [t,false];
+}
+// 3 · is it negative?  4 · is it zero?
+async function testSign(S,E,sub,zero){
+  const v=iv(E), rel=zero?(v!==0?'≠':'='):(v>=0?'≥':'<'), lit=E.k==='i';
+  const t=row(sub,lit?null:eq_('y='),lit?null:intT(v,'y'),opr(rel,'yr'),num(0,'y0'));
+  await S.show('w',t,{fade:900}); await S.wait(500);
+  const ok=zero?v!==0:v>=0;
+  if(!ok) await S.pulseRed(zero?[lit?'sa':'ya','yr']:[lit?'sm':'ym'],2000);
+  return [t,ok];
+}
+
+async function runNum(S,E){
+  const C=classify(E,WM), ord=order(WM), sub=tok(E,'s'), tests=[testQ,testZ,(S,E,s)=>testSign(S,E,s,false),(S,E,s)=>testSign(S,E,s,true)];
+  clearHi(); const old=SC.tok.get(E.id); if(old) old.setAttribute('opacity',0);
+  S.cfg('w',{cx:WX,y:WY,s:34,al:'l'});
+  await S.show('w',sub,{fade:800}); await S.wait(400);
+  // it starts in ℝ, in the chain and in the picture
+  const rx=k=>GEO.ch[k].x-25, ring=el('rect',{x:rx('R'),y:CHY-37,width:50,height:50,rx:14,class:'ring',opacity:0},S.st.L.marks);
+  hiSet('R'); await S.tw(700,t=>ring.setAttribute('opacity',t)); await S.wait(500);
+  let at=0;
+  for(let k=0;k<C.res.length;k++){
+    actTest(k,true); await S.wait(700);
+    const [t,ok,ex=[]]=await tests[k](S,E,sub);
+    const m=await mark(S,ok,endX(t),WY-12); await S.wait(700);
+    actTest(k,false);
+    if(!ok){ await S.all(S.tw(700,u=>[m,...ex].forEach(e=>e.setAttribute('opacity',1-u))),S.show('w',sub,{dur:900})); m.remove(); await S.wait(300); break; }
+    // through the gate: the ring moves on, and the next set lights up
+    const a=rx(ord[at]), b=rx(ord[at+1]); at++; hiSet(ord[at]);
+    await S.all(S.tw(1100,u=>ring.setAttribute('x',lerp(a,b,u))), S.tw(700,u=>[m,...ex].forEach(e=>e.setAttribute('opacity',1-u))), k+1<C.res.length?S.show('w',sub,{dur:900}):null);
+    m.remove(); ex.forEach(e=>e.remove()); await S.wait(300);
+  }
+  // the number floats up into its set
+  await fly(S,E);
+  await S.tw(900,t=>ring.setAttribute('opacity',1-t)); clearHi();
+}
+async function fly(S,E){
+  const A=lay(sub0(E),34), a=A.leaves.map(l=>shift(l,WX,WY)), sl=GEO.slot[E.id], b=tokLeaves(E,'s',TS).map(l=>shift(l,sl.x,sl.y));
+  const cl=a.map(l=>mkLeaf(S.st.L.fx,l));
+  for(const [k,c] of S.cur) if(c.line==='w'){ c.el.remove(); S.cur.delete(k); }
+  S.st.L.marks.querySelectorAll('.mk').forEach(e=>e.remove());
+  const h=70;
+  await S.tw(1600,t=>cl.forEach((e,i)=>setLeaf(e,mixLeaf(a[i],b[i],t,0,-h*Math.sin(Math.PI*t)))));
+  putTok(S.st,E); cl.forEach(e=>e.remove());
+}
+const sub0=E=>tok(E,'s');
+
+
+/* ═════════ the practice test ═════════ */
+// lines of working: each starts with "=" at LX, the expression above keeps its "=" there too
+const at=(S,line,y,s=30,x=LX)=>S.cfg(line,{cx:x,y,s,al:'l'});
+const lead=(P,y,s=30,x=LX)=>({cx:x-W(P,s),y,s,al:'l'});
+const X11=250;   // problem 11 leaves room at the right for a side calculation
+const neg=(v,k,cls)=>row(num('−',k+'m',cls),num(v,k,cls));     // a negative number as its sign and its digits
+
+/* ───────── 1 · which set: every number is sorted, then the asked set lights up ───────── */
+const P1={cur:null};
+async function runSets(S,k){
+  for(const E of NUMS) if(!SC.tok.has(E.id)){ P1.cur=E; await runNum(S,E); P1.cur=null; }
+  await S.wait(400);
+  // the set lights up, and every number in it gives a small wiggle
+  const ord=order(false), lev=ord.indexOf(k);
+  hiSet(k); await S.wait(600);
+  const mem=NUMS.filter(E=>ord.indexOf(classify(E,false).reg)>=lev).map(E=>({e:SC.tok.get(E.id),s:GEO.slot[E.id]}));
+  await S.tw(2400,t=>{ const sc=1+.16*Math.sin(Math.PI*t), a=5*Math.sin(4*Math.PI*t)*Math.sin(Math.PI*t);
+    mem.forEach(m=>m.e.setAttribute('transform',t>=1?`translate(${m.s.x} ${m.s.y})`:`translate(${m.s.x} ${m.s.y}) rotate(${a}) scale(${sc})`)); });
+}
+
+/* ───────── 3c · a power minus a number ───────── */
+const start3c=()=>row(pw(num(10,'b','cA'),num(3,'e','cF')),opr('−','mo'),num(10,'t'));
+async function run3c(S){
+  const P=pw(num(10,'b','cA'),num(3,'e','cF')), Y=[80,170,270,340];
+  await S.begin(start3c(),lead(P,Y[0]));
+  // the power written out: three tens
+  const ids=['0','1','2'], fac=id=>num(10,'f'+id,'cA');
+  at(S,'w1',Y[1]);
+  await S.show('w1',row(opr('=','q1'),brc(prod('f',ids,fac),num(3,'fl','cF'),'u','fb','cF'),opr('−','o1'),num(10,'t1')),{from:{...cps('f',ids,'b'),fl:'e',o1:'mo',t1:'t'},dur2:1300}); await S.wait(1200);
+  at(S,'w2',Y[2]);
+  await S.show('w2',row(opr('=','q2'),num(1000,'g'),opr('−','o2'),num(10,'t2')),{from:{g:'f0',o2:'o1',t2:'t1'},dur2:1300}); await S.wait(1000);
+  at(S,'w3',Y[3]);
+  await S.show('w3',row(opr('=','q3'),num(990,'res')),{fade:850}); await S.wait(300);
+  await S.glow('res');
+}
+
+/* ───────── 4 · the number in the middle: two walkers step towards each other ───────── */
+const MLY=290, MX0=90, MX1=630;
+const nS=(v,k)=>v<0?num('−'+(-v),k,'cB'):num(v,k,v>0?'cA':'');
+const nP=(v,k)=>v<0?par(nS(v,k),k+'P'):nS(v,k);
+// a value: a whole number, or a fraction n/d
+const vT=(q,k)=>q.d===1?nS(q.n,k):frc(num(q.n,k+'n','cA'),num(q.d,k+'d','cA'),k,'cA');
+const vKeys=(q,k)=>q.d===1?[k]:[k+'n',k+'d',k+'.bar'];
+const vFrom=(q,to,from)=>q.d===1?{[to]:from}:{[to+'n']:from+'n',[to+'d']:from+'d',[to+'.bar']:from+'.bar'};
+const qv=q=>q.n/q.d;
+function midLine(S,E){
+  const g=el('g',{},S.st.L.marks), X=v=>MX0+(v-E.lo)/(E.hi-E.lo)*(MX1-MX0);
+  el('line',{x1:MX0-30,x2:MX1+30,y1:MLY,y2:MLY,class:'axis'},g);
+  el('path',{d:`M${MX1+38} ${MLY} l-10 -6 v12z`,class:'axhead'},g);
+  el('path',{d:`M${MX0-38} ${MLY} l10 -6 v12z`,class:'axhead'},g);
+  return {g,X,labs:new Map(),ticks:new Map()};
+}
+// a label under the line, drawn around its own middle
+function midLab(Ln,v,tree,s=15){
+  const L=lay(tree,s), g=el('g',{},Ln.g), y=MLY+16+L.asc;
+  L.leaves.forEach(l=>{ const e=mkLeaf(g,shift(l,Ln.X(v)-L.w/2,y)); if(tree.bold) e.classList.add('bold'); });
+  return g;
+}
+function midTick(Ln,v,zero){ const h=zero?10:6; return el('line',{x1:Ln.X(v),x2:Ln.X(v),y1:MLY-h,y2:MLY+h,class:zero?'tick0':'tick'},Ln.g); }
+const labT=q=>{ if(q.n===0) return {...num(0),bold:true}; return q.d===1||q.n===q.d?nS(q.n/q.d):frc(num(q.n,null,'cA'),num(q.d,null,'cA'),null,'cA'); };
+function walker(S,Ln,v){
+  const g=el('g',{class:'walker '+(v>0?'p':v<0?'n':'')},S.st.L.fx), c=el('circle',{r:0},g);
+  const w={g,c,v,set(x,y){ g.setAttribute('transform',`translate(${x} ${y})`); }}; w.set(Ln.X(v),MLY); return w;
+}
+// a hop: an arc is drawn and the walker rides along it
+async function hopW(S,Ln,w,v,dur=700){
+  const x1=Ln.X(w.v), x2=Ln.X(v), h=Math.min(48,14+Math.abs(x2-x1)*.22), mx=(x1+x2)/2, cy=MLY-2*h;
+  const g=el('g',{class:'arc '+(v>w.v?'p':'n')},S.st.L.marks), p=el('path',{class:'a',d:`M${x1} ${MLY} Q${mx} ${cy} ${x2} ${MLY}`},g);
+  const ang=Math.atan2(MLY-cy,x2-mx)*180/Math.PI, hd=el('path',{class:'h',d:'M2 0 L-10 -6 L-10 6 Z',transform:`translate(${x2} ${MLY}) rotate(${ang})`,opacity:0},g);
+  let L=0; try{ L=p.getTotalLength(); }catch(e){} if(!L) L=Math.abs(x2-x1)+2*h;
+  p.style.strokeDasharray=L; p.style.strokeDashoffset=L;
+  await S.tw(dur,t=>{ p.style.strokeDashoffset=L*(1-t); const u=1-t; w.set(u*u*x1+2*u*t*mx+t*t*x2,u*u*MLY+2*u*t*cy+t*t*MLY); });
+  p.style.strokeDasharray='none'; hd.setAttribute('opacity',1);
+  w.v=v; w.g.setAttribute('class','walker '+(v>0?'p':v<0?'n':''));
+}
+const midTop=(E,mq)=>row(vT(E.a,'ma'),cellN(84),mq,cellN(84),vT(E.b,'mb'));
+async function runMid(S,E){
+  await S.begin(midTop(E,num('?','mq','mut')),{cx:CX,y:76,s:34});
+  const Ln=midLine(S,E); let q=E.q||1;                    // q: ticks per whole at the start
+  const vals=[]; for(let i=Math.round(E.lo*q);i<=Math.round(E.hi*q);i++) vals.push(i);
+  vals.forEach(i=>{ const v=i/q; Ln.ticks.set(i/q,midTick(Ln,v,i===0)); const lb=midLab(Ln,v,labT({n:i,d:q})); Ln.labs.set(v,lb); });
+  await S.fadeIn(Ln.g,900); await S.wait(500);
+  // the two numbers float down to their places, and a walker stands at each
+  const A=qv(E.a), B=qv(E.b);
+  await S.all(S.floatGroup(vKeys(E.a,'ma'),{x:Ln.X(A),y:MLY-26},{dur:1200}),S.floatGroup(vKeys(E.b,'mb'),{x:Ln.X(B),y:MLY-26},{dur:1200}));
+  const wa=walker(S,Ln,A), wb=walker(S,Ln,B);
+  await S.tw(500,t=>{ wa.c.setAttribute('r',9*t); wb.c.setAttribute('r',9*t); }); await S.wait(600);
+  // one step each, again and again, until they meet
+  const step=async d=>{ await S.all(hopW(S,Ln,wa,wa.v+d),hopW(S,Ln,wb,wb.v-d)); await S.wait(380); };
+  let d=1/q;
+  while(wb.v-wa.v>1e-9){
+    if(wb.v-wa.v<2*d-1e-9){
+      // only one step between them: every piece is cut in two, and the steps are halved
+      await S.tw(1200,t=>{ const r=9+4*Math.sin(Math.PI*t); wa.c.setAttribute('r',r); wb.c.setAttribute('r',r); }); await S.wait(500);
+      q*=2; d/=2;
+      const news=[];
+      for(let i=Math.round(E.lo*q);i<=Math.round(E.hi*q);i++) if(i%2){ const v=i/q, e=el('line',{x1:Ln.X(v),x2:Ln.X(v),y1:MLY,y2:MLY,class:'tick hot'},Ln.g); news.push(e); Ln.ticks.set(v,e); }
+      await S.tw(1300,t=>news.forEach(e=>{ e.setAttribute('y1',MLY-6*t); e.setAttribute('y2',MLY+6*t); }));
+      await S.wait(500);
+      // the labels: every quarter is two eighths, and the new ticks get their own
+      const swap=[], fresh=[];
+      for(let i=Math.round(E.lo*q);i<=Math.round(E.hi*q);i++){ const v=i/q, old=Ln.labs.get(v), lt=labT({n:i,d:q});
+        if(i===0||i===q) continue;
+        const nl=midLab(Ln,v,lt); nl.setAttribute('opacity',0); Ln.labs.set(v,nl);
+        (old?swap:fresh).push([old,nl]); }
+      await S.tw(1000,t=>swap.forEach(([o,n])=>{ o.setAttribute('opacity',1-t); n.setAttribute('opacity',t); }));
+      swap.forEach(([o])=>o.remove()); await S.wait(300);
+      await S.tw(900,t=>fresh.forEach(([,n])=>n.setAttribute('opacity',t)));
+      news.forEach(e=>e.setAttribute('class','tick')); await S.wait(800);
+      continue;
+    }
+    await step(d);
+  }
+  // they meet in the middle
+  await S.tw(400,t=>wb.g.setAttribute('opacity',1-t)); wb.g.remove();
+  await S.tw(900,t=>wa.c.setAttribute('r',9+7*Math.sin(Math.PI*t)));
+  const M=E.m, mv=qv(M), ml=Ln.labs.get(mv), Lm=lay(vT(M,'lm'),15);
+  S.cfg('lm',{cx:Ln.X(mv),y:MLY+16+Lm.asc,s:15});
+  await S.show('lm',vT(M,'lm'),{fade:1}); if(ml) ml.remove();
+  await S.wait(400);
+  await S.show('main',midTop(E,vT(M,'ans')),{from:vFrom(M,'ans','lm'),dur:900,dur2:1400}); await S.wait(400);
+  await S.wiggle(vKeys(M,'ans'),1600); await S.wait(800);
+  // the quick way gives the same: the sum, halved
+  const w=E.w, s=30;
+  S.cfg('w',{cx:CX-W(w.full,s)/2,y:166,s,al:'l'});
+  await S.show('w',w.t1,{from:{...vFrom(E.a,'wa','ma'),...vFrom(E.b,'wb','mb')},dur2:1300}); await S.wait(1000);
+  await S.show('w',w.t2,{fade:850}); await S.wait(900);
+  await S.show('w',w.full,{fade:850}); await S.wait(500);
+  await S.all(S.wiggle(vKeys(M,'wm'),2200),S.wiggle(vKeys(M,'ans'),2200));
+}
+// the halving: (a + b) / 2 = s / 2 = m
+function midW(a,b,sum,m){
+  const t1=row(par(row(vT(a,'wa'),opr('+','wp'),b.d===1?nP(b.n,'wb'):vT(b,'wb')),'wP'),opr('/','wd'),num(2,'w2','cF'));
+  const t2=row(t1,opr('=','wq'),vT(sum,'ws'),opr('/','wd2'),num(2,'w22','cF'));
+  return {t1,t2,full:row(t2,opr('=','wq2'),vT(m,'wm'))};
+}
+const MID=[
+  {a:{n:-10,d:1},b:{n:2,d:1},lo:-11,hi:3,m:{n:-4,d:1},w:midW({n:-10,d:1},{n:2,d:1},{n:-8,d:1},{n:-4,d:1})},
+  {a:{n:-11,d:1},b:{n:-5,d:1},lo:-12,hi:1,m:{n:-8,d:1},w:midW({n:-11,d:1},{n:-5,d:1},{n:-16,d:1},{n:-8,d:1})},
+  {a:{n:1,d:4},b:{n:1,d:1},lo:0,hi:1,q:4,m:{n:5,d:8},w:midW({n:1,d:4},{n:1,d:1},{n:5,d:4},{n:5,d:8})},
+];
+// the button: a short line with the two numbers and a question mark between them
+function midIcon(E){
+  const w=150, h=64, y=24, x0=14, x1=w-14, svg=el('svg',{viewBox:`0 0 ${w} ${h}`,width:w,height:h,class:'ic','aria-hidden':'true'});
+  el('line',{x1:6,x2:w-6,y1:y,y2:y,stroke:'currentColor','stroke-width':1.6},svg);
+  const put=(tree,x,yy,s)=>{ const L=lay(tree,s); L.leaves.forEach(l=>mkLeaf(svg,shift(l,x-L.w/2,yy+L.asc))); };
+  [[E.a,x0+10],[E.b,x1-10]].forEach(([q,x])=>{ el('circle',{cx:x,cy:y,r:4.5,fill:qv(q)<0?'var(--cB)':'var(--cA)'},svg); put(vT(q),x,y+6,15); });
+  put(num('?'),w/2,y-22,15);
+  return svg;
+}
+
+/* ───────── 6 · which x: the same base on both sides, so the exponents are the same ───────── */
+const EQX=300;
+const eqC=(L,y,s=30)=>({cx:EQX-W(L,s)-W(opr('='),s)/2,y,s,al:'l'});
+// a line of an equation, its "=" kept at EQX
+function eqShow(S,line,y,L,R,op){ S.cfg(line,eqC(L,y)); return S.show(line,row(L,opr('=',line+'Q'),R),op); }
+async function swapSides(S,line,y,L,R,ku,kd){
+  const up={y:-36}, dw={y:36}, cv={}; ku.forEach(k=>cv[k]=up); kd.forEach(k=>cv[k]=dw);
+  await eqShow(S,line,y,L,R,{dur:1600,curve:cv});
+}
+const t10=(k,e)=>pw(num(10,k,'cA'),e);
+const L6a=()=>frc(t10('tb',num(2,'te','cF')),t10('bb',V('x','be','cO')),'M'), R6a=()=>t10('rb',neg(3,'re'));
+const start6a=()=>row(L6a(),opr('=','mainQ'),R6a());
+async function run6a(S){
+  const Y=[76,170,245,320,395];
+  await S.begin(start6a(),eqC(L6a(),Y[0]));
+  // dividing: the exponent below is subtracted from the one above
+  await eqShow(S,'w1',Y[1],t10('ab',row(num(2,'a2','cF'),opr('−','am'),V('x','ax','cO'))),t10('cb',neg(3,'ce')),
+    {from:{ab:'tb',a2:'te',ax:'be',cb:'rb',ce:'re',cem:'rem'},dur2:1300}); await S.wait(1100);
+  // the same base on both sides: so the exponents are the same
+  await S.wiggle(['ab','cb'],2200); await S.wait(500);
+  await eqShow(S,'w2',Y[2],row(num(2,'d2','cF'),opr('−','dm'),V('x','dx','cO')),neg(3,'de'),
+    {from:{d2:'a2',dm:'am',dx:'ax',de:'ce',dem:'cem'},dur2:1300}); await S.wait(1100);
+  // + x on both sides; − x + x is 0
+  let L=row(num(2,'f2'),opr('−','fm'),V('x','fx')), R=neg(3,'fe');
+  await eqShow(S,'w3',Y[3],L,R,{from:{f2:'d2',fm:'dm',fx:'dx',fe:'de',fem:'dem'},dur2:1200}); await S.wait(600);
+  R=row(neg(3,'fe'),opr('+','fq','cF'),V('x','fz','cF'));
+  await eqShow(S,'w3',Y[3],row(L,opr('+','fp','cF'),V('x','fy','cF')),R,{dur:900,fade:900}); await S.wait(900);
+  await eqShow(S,'w3',Y[3],row(num(2,'f2'),opr('−','fm','cO'),V('x','fx','cO'),opr('+','fp','cO'),V('x','fy','cO')),R,{dur:600}); await S.wait(1000);
+  R=row(neg(3,'fe'),opr('+','fq'),V('x','fz'));
+  await eqShow(S,'w3',Y[3],num(2,'f2'),R,{dur:1200}); await S.wait(900);
+  // + 3 on both sides; − 3 + 3 is 0
+  L=num(2,'g2'); R=row(neg(3,'ge'),opr('+','gp'),V('x','gx'));
+  await eqShow(S,'w4',Y[4],L,R,{from:{g2:'f2',ge:'fe',gem:'fem',gp:'fq',gx:'fz'},dur2:1200}); await S.wait(600);
+  L=row(num(2,'g2'),opr('+','gq','cF'),num(3,'g3','cF'));
+  await eqShow(S,'w4',Y[4],L,row(neg(3,'ge'),opr('+','gr','cF'),num(3,'g4','cF'),opr('+','gp'),V('x','gx')),{dur:900,fade:900}); await S.wait(900);
+  await eqShow(S,'w4',Y[4],L,row(neg(3,'ge','cO'),opr('+','gr','cO'),num(3,'g4','cO'),opr('+','gp'),V('x','gx')),{dur:600}); await S.wait(1000);
+  await eqShow(S,'w4',Y[4],row(num(2,'g2'),opr('+','gq'),num(3,'g3')),V('x','gx'),{dur:1200}); await S.wait(900);
+  await eqShow(S,'w4',Y[4],num(5,'g2'),V('x','gx'),{dur:1000}); await S.wait(900);
+  await swapSides(S,'w4',Y[4],V('x','gx'),num(5,'g2'),['gx'],['g2']); await S.wait(300);
+  await S.glow('g2');
+}
+
+const t2_=(k,e)=>pw(num(2,k,'cA'),e);
+const L6b=()=>t2_('lb',num(3,'le')), R6b=()=>frc(row(t2_('tb',num(2,'t1','cF')),opr('·','tm'),t2_('tc',V('x','t2','cF'))),t2_('bb',neg(1,'be','cO')),'M');
+const start6b=()=>row(L6b(),opr('=','mainQ'),R6b());
+async function run6b(S){
+  const Y=[80,192,276,350,424];
+  await S.begin(start6b(),eqC(L6b(),Y[0]));
+  // above the bar: multiplying, the exponents add up
+  await eqShow(S,'w1',Y[1],t2_('ub',num(3,'ue')),frc(t2_('vb',row(num(2,'v1','cF'),opr('+','vp','cF'),V('x','v2','cF'))),t2_('wb',neg(1,'we','cO')),'U'),
+    {from:{ub:'lb',ue:'le',vb:'tb',v1:'t1',v2:'t2',vp:'tm',wb:'bb',we:'be',wem:'bem','U.bar':'M.bar'},dur2:1300}); await S.wait(1100);
+  // dividing: the exponent below is subtracted
+  const Lb=t2_('xb0',num(3,'xe0'));
+  await eqShow(S,'w2',Y[2],Lb,t2_('xb',row(num(2,'x1','cF'),opr('+','xp','cF'),V('x','x2','cF'),opr('−','xm'),par(neg(1,'xe','cO'),'xP'))),
+    {from:{xb0:'ub',xe0:'ue',xb:'vb',x1:'v1',xp:'vp',x2:'v2',xe:'we',xem:'wem'},dur2:1300}); await S.wait(1100);
+  // minus a negative number is plus
+  await eqShow(S,'w2',Y[2],Lb,t2_('xb',row(num(2,'x1','cF'),opr('+','xp','cF'),V('x','x2','cF'),opr('+','xm','cO'),num(1,'xe','cO'))),{dur:1200}); await S.wait(1000);
+  const c=S.cur.get('x1').spec;
+  await S.floatGroup(['xe'],{x:c.x,y:c.y-.32*c.s},{dur:1100});
+  await eqShow(S,'w2',Y[2],Lb,t2_('xb',row(num(3,'x1','cF'),opr('+','xp','cF'),V('x','x2','cF'))),{dur:1100}); await S.wait(1000);
+  // the same base on both sides: so the exponents are the same
+  await S.wiggle(['xb0','xb'],2200); await S.wait(500);
+  await eqShow(S,'w3',Y[3],num(3,'y3'),row(num(3,'y1','cF'),opr('+','yp','cF'),V('x','yx','cF')),{from:{y3:'xe0',y1:'x1',yp:'xp',yx:'x2'},dur2:1300}); await S.wait(1100);
+  // − 3 on both sides; 3 − 3 is 0
+  let L=num(3,'z3'), R=row(num(3,'z1'),opr('+','zp'),V('x','zx'));
+  await eqShow(S,'w4',Y[4],L,R,{from:{z3:'y3',z1:'y1',zp:'yp',zx:'yx'},dur2:1200}); await S.wait(600);
+  await eqShow(S,'w4',Y[4],row(num(3,'z3'),opr('−','zm','cF'),num(3,'z4','cF')),row(num(3,'z1'),opr('−','zn','cF'),num(3,'z5','cF'),opr('+','zp'),V('x','zx')),{dur:900,fade:900}); await S.wait(900);
+  await eqShow(S,'w4',Y[4],row(num(3,'z3','cO'),opr('−','zm','cO'),num(3,'z4','cO')),row(num(3,'z1','cO'),opr('−','zn','cO'),num(3,'z5','cO'),opr('+','zp'),V('x','zx')),{dur:600}); await S.wait(1000);
+  await eqShow(S,'w4',Y[4],num(0,'z0'),V('x','zx'),{dur:1200,fade:800}); await S.wait(900);
+  await swapSides(S,'w4',Y[4],V('x','zx'),num(0,'z0'),['zx'],['z0']); await S.wait(300);
+  await S.glow('z0');
+}
+
+const e10=(k,P)=>pw(num(10,k,'cA'),row(num('−',P+'m','cF'),V('x',P,'cF')));
+const L6c=()=>row(e10('ab','ax'),opr('+','ap'),e10('bb','bx'));
+const dD=(str,P)=>decN(mkD(str,P,''));
+const dFr=(str,P,Q)=>{ const f={[P+'p']:Q+'p'}; [...str.replace('.','')].forEach((_,j)=>{ f[P+j]=Q+j; }); return f; };
+const start6c=()=>row(L6c(),opr('=','mainQ'),dD('0.002','r'));
+async function run6c(S){
+  const Y=[72,168,248,328,408];
+  await S.begin(start6c(),eqC(L6c(),Y[0]));
+  // two of the same
+  await eqShow(S,'main',Y[0],brc(L6c(),num(2,'n2'),'u','nb'),dD('0.002','r'),{fade:900}); await S.wait(1100);
+  await eqShow(S,'w1',Y[1],row(num(2,'k2'),opr('·','km'),e10('kb','kx')),dD('0.002','c'),
+    {from:{k2:'n2',kb:'ab',kx:'ax',kxm:'axm',...dFr('0.002','c','r')},dur2:1300}); await S.wait(1100);
+  // / 2 on both sides; 2 · … / 2 leaves what was there
+  let L=row(num(2,'d2'),opr('·','dm'),e10('db','dx'));
+  await eqShow(S,'w2',Y[2],L,dD('0.002','e'),{from:{d2:'k2',dm:'km',db:'kb',dx:'kx',dxm:'kxm',...dFr('0.002','e','c')},dur2:1200}); await S.wait(600);
+  await eqShow(S,'w2',Y[2],row(L,opr('/','ds','cF'),num(2,'d3','cF')),row(dD('0.002','e'),opr('/','es','cF'),num(2,'e9','cF')),{dur:900,fade:900}); await S.wait(900);
+  await eqShow(S,'w2',Y[2],row(num(2,'d2','cO'),opr('·','dm','cO'),e10('db','dx'),opr('/','ds','cO'),num(2,'d3','cO')),row(dD('0.002','e'),opr('/','es','cF'),num(2,'e9','cF')),{dur:600}); await S.wait(1000);
+  await eqShow(S,'w2',Y[2],e10('db','dx'),row(dD('0.002','e'),opr('/','es','cF'),num(2,'e9','cF')),{dur:1200}); await S.wait(800);
+  await eqShow(S,'w2',Y[2],e10('db','dx'),dD('0.001','e'),{dur:1100}); await S.wait(1000);
+  // three zeros in front: the power of ten with exponent −3
+  const Df=mkD('0.001','f','');
+  await eqShow(S,'w3',Y[3],e10('fb','fx'),decN(Df),{from:{fb:'db',fx:'dx',fxm:'dxm',...dFr('0.001','f','e')},dur2:1200}); await S.wait(600);
+  await eqShow(S,'w3',Y[3],e10('fb','fx'),decN(Df,{a:0,b:4,lab:num(3,'fl','cF'),key:'fbr'}),{fade:900}); await S.wait(1200);
+  await eqShow(S,'w3',Y[3],e10('fb','fx'),pw(row(num(1,'f3','cA'),num(0,'f0','cA')),row(num('−','flm','cF'),num(3,'fl','cF'))),{dur:1300,fade:800}); await S.wait(1000);
+  // the same base on both sides: so the exponents are the same
+  await S.wiggle(['fb','f3','f0'],2200); await S.wait(500);
+  await eqShow(S,'w4',Y[4],row(num('−','im','cF'),V('x','ix','cF')),row(num('−','jm','cF'),num(3,'j3','cF')),{from:{im:'fxm',ix:'fx',jm:'flm',j3:'fl'},dur2:1300}); await S.wait(900);
+  // the same sign on both sides
+  await S.all(S.wiggle(['im'],2000),S.wiggle(['jm'],2000)); await S.wait(400);
+  await eqShow(S,'w4',Y[4],V('x','ix','cF'),num(3,'j3','cF'),{dur:1200}); await S.wait(300);
+  await S.glow('j3');
+}
+
+/* ───────── 8a · three fractions: first the two that are added, then the one taken away ───────── */
+const start8a=()=>row(frc(1,4,'a0','cA'),opr('+','op0'),frc(7,8,'b0','cB'),opr('−','op1'),frc(1,2,'c0'));
+function moveModel(S,Mo,y1,dur=1300){
+  const y0=Mo.y;
+  return S.tw(dur,t=>{ const y=lerp(y0,y1,t);
+    Mo.bars.forEach(B=>{ B.bg.setAttribute('y',y); B.out.setAttribute('y',y); B.lines.forEach(L=>{ L.e.setAttribute('y1',y); L.e.setAttribute('y2',y+B.h); }); });
+    Mo.cells.forEach(q=>q.e.setAttribute('y',y)); })
+    .then(()=>{ Mo.y=y1; Mo.bars.forEach(B=>B.y=y1); Mo.cells.forEach(q=>q.y=y1); });
+}
+async function run8a(S){
+  const uw=250, h=38, yA=292, yB=362, yR=452, MX=400;
+  S.cfg('work',{cx:CX,y:212,s:26});
+  [['labA',yA],['labB',yB],['labR',yR]].forEach(([k,y])=>S.cfg(k,{cx:66,y:y+h/2+8,s:22}));
+  const A0={n:1,d:4}, B0={n:7,d:8}, C0={n:1,d:2}, START=start8a();
+  await S.begin(START);
+  const a=mkF(A0), b=mkF(B0), c=mkF(C0);
+  let rhs=()=>row(opr('=','e1'),fT('a2',a,'cA'),opr('+','op2'),fT('b2',b,'cB'),opr('−','op3'),fT('c2',c,''));
+  const view=()=>row(START,rhs());
+  S.focus(keysOf('a0',A0));
+  const mA=S.model({n:1,d:4,cx:MX,y:yA,uw,h,cls:'cA'});
+  await S.all(S.show('labA',fT('la',a,'cA'),{from:cp('la','a0',A0),dur:1300}),S.wait(500).then(()=>S.showModel(mA,1100))); await S.wait(600);
+  S.focus(keysOf('b0',B0));
+  const mB=S.model({n:7,d:8,cx:MX,y:yB,uw,h,cls:'cB'});
+  await S.all(S.show('labB',fT('lb',b,'cB'),{from:cp('lb','b0',B0),dur:1300}),S.wait(500).then(()=>S.showModel(mB,1100))); await S.wait(700);
+  S.focus(null);
+  await S.show('main',view(),{from:{...cp('a2','a0',A0),...cp('b2','b0',B0),...cp('c2','c0',C0)}}); await S.wait(900);
+  const T={a:{F:a,P:'a2',m:mA,lab:'labA',lp:'la',cls:'cA'}};
+  // quarters into eighths
+  await S.show('work',row(num(4,'w1','cA'),opr('·','wm','cF'),num(2,'wk','cF'),opr('=','we'),num(8,'w2','cB')),{from:{w1:'a2d',w2:'b2d'}});
+  await S.wait(1100);
+  await scaleStep(S,view,T.a,'·',2,'wk');
+  await S.show('work',row());
+  // eighths together
+  rhs=()=>row(opr('=','e1'),frc(row(num(a.n,'a2n','cA'),opr('+','op2'),num(b.n,'b2n','cB')),num(8,'a2d'),'a2'),opr('−','op3'),fT('c2',c,''));
+  await S.show('main',view()); await S.wait(800);
+  const mR=S.model({n:0,d:8,wholes:2,cx:MX,y:yR,uw,h});
+  await S.showModel(mR); await S.wait(300);
+  await S.moveCells(mA.cells.map((q,i)=>[q,S.slot(mR,i)]));
+  await S.moveCells(mB.cells.map((q,i)=>[q,S.slot(mR,a.n+i)]));
+  mR.cells=[...mA.cells,...mB.cells]; mA.cells=[]; mB.cells=[];
+  await S.all(S.fadeModel(mA),S.fadeModel(mB),S.show('labA',row()),S.show('labB',row()));
+  const R={n:9,d:8};
+  rhs=()=>row(opr('=','e1'),fT('a2',R,''),opr('−','op3'),fT('c2',c,''));
+  await S.all(S.show('main',view()),S.show('labR',fT('lr',R,''))); await S.wait(1300);
+  // the result is the first number now: it moves up and turns orange
+  S.cfg('labR',{cx:66,y:yA+h/2+8,s:22});
+  await S.all(moveModel(S,mR,yA),S.show('labR',fT('lr',R,'cA'),{dur:1300}));
+  mR.cells.forEach(q=>{ q.cls='cA'; q.e.setAttribute('class','cell cA'); });
+  rhs=()=>row(opr('=','e1'),fT('a2',R,'cA'),opr('−','op3'),fT('c2',c,'cB'));
+  await S.show('main',view(),{dur:800}); await S.wait(900);
+  S.focus(keysOf('c2',C0));
+  const mC=S.model({n:1,d:2,x0:mR.x0,y:yB,uw,h,cls:'cB'});
+  await S.all(S.show('labB',fT('lb',c,'cB'),{from:cp('lb','c2',C0),dur:1300}),S.wait(500).then(()=>S.showModel(mC,1100))); await S.wait(700);
+  S.focus(null);
+  // halves into eighths
+  await S.show('work',row(num(2,'w1','cB'),opr('·','wm','cF'),num(4,'wk','cF'),opr('=','we'),num(8,'w2','cA')),{from:{w1:'c2d',w2:'a2d'}});
+  await S.wait(1100);
+  await scaleStep(S,view,{F:c,P:'c2',m:mC,lab:'labB',lp:'lb',cls:'cB'},'·',4,'wk');
+  await S.show('work',row());
+  // take away: the blue pieces land on orange ones, both turn purple and go
+  rhs=()=>row(opr('=','e1'),frc(row(num(9,'a2n','cA'),opr('−','op3'),num(c.n,'c2n','cB')),num(8,'a2d'),'a2'));
+  await S.show('main',view()); await S.wait(800);
+  const tgt=mR.cells.slice(9-c.n);
+  mC.cells.forEach(q=>q.e.parentNode.appendChild(q.e));
+  await S.moveCells(mC.cells.map((q,i)=>[q,{x:tgt[i].x,y:tgt[i].y,w:tgt[i].w,h:tgt[i].h}]),1200);
+  [...mC.cells,...tgt].forEach(q=>q.e.setAttribute('class','cell cO'));
+  await S.wait(1500);
+  await S.fadeOut([...mC.cells,...tgt].map(q=>q.e),1100);
+  const keep=mR.cells.slice(0,9-c.n), mS=S.model({n:0,d:8,wholes:1,x0:mR.x0,y:yR,uw,h});
+  await S.showModel(mS); await S.wait(300);
+  await S.moveCells(keep.map((q,i)=>[q,S.slot(mS,i)]));
+  mS.cells=keep; mR.cells=[]; mC.cells=[];
+  S.cfg('labS',{cx:66,y:yR+h/2+8,s:22});
+  await S.all(S.fadeModel(mR),S.fadeModel(mC),S.show('labR',row()),S.show('labB',row()));
+  rhs=()=>row(opr('=','e1'),frc(num(5,'a2n'),num(8,'a2d'),'a2'));
+  await S.all(S.show('main',view()),S.show('labS',frc(5,8,'ls'))); await S.wait(300);
+  await S.wiggle(['a2n','a2d','a2.bar'],2000);
+}
+const E8b={op:'/',A:{n:2,whole:1},B:{n:3,d:5}}, E8c={op:'·',A:{n:3,d:8},B:{n:4,d:7}};
+
+/* ───────── 9b · a root squared, minus a root ───────── */
+const start9b=()=>row(pw(par(rt(num(15,'a','cA'),'r1'),'p'),num(2,'e','cF')),opr('−','mo'),rt(num(9,'b','cB'),'r2'));
+async function run9b(S){
+  const Y=[80,160,240,320], P=pw(par(rt(num(15,'a','cA'),'r1'),'p'),num(2,'e','cF'));
+  await S.begin(start9b(),lead(P,Y[0]));
+  // squared: the root times itself
+  at(S,'w1',Y[1]);
+  await S.show('w1',row(opr('=','q1'),rt(num(15,'c1','cA'),'cr1'),opr('·','cm'),rt(num(15,'c2','cA'),'cr2'),opr('−','co'),rt(num(9,'cb','cB'),'cr3')),
+    {from:{c1:'a',c2:'a',cr1:'r1',cr2:'r1',co:'mo',cb:'b',cr3:'r2'},dur2:1300}); await S.wait(1000);
+  // a root times itself is the number under it
+  at(S,'w2',Y[2]);
+  await S.show('w2',row(opr('=','q2'),num(15,'d1','cA'),opr('−','do'),rt(num(9,'db','cB'),'dr')),{from:{d1:'c1',do:'co',db:'cb',dr:'cr3'},dur2:1300}); await S.wait(1000);
+  // nine is three times three: two equal factors, and one of them is the root
+  S.cfg('sd',{cx:560,y:Y[2],s:24,al:'l'});
+  await S.show('sd',row(num(9,'s9','cB'),opr('=','sq'),num(3,'s1','cB'),opr('·','sm'),num(3,'s2','cB')),{from:{s9:'db'},dur2:1300}); await S.wait(700);
+  await S.wiggle(['s1','s2'],2200); await S.wait(500);
+  at(S,'w3',Y[3]);
+  await S.show('w3',row(opr('=','q3'),num(15,'e1','cA'),opr('−','eo'),num(3,'e2','cB')),{from:{e1:'d1',eo:'do',e2:'s1'},dur2:1300}); await S.wait(1000);
+  await S.show('w3',row(opr('=','q3'),num(15,'e1','cA'),opr('−','eo'),num(3,'e2','cB'),opr('=','q4'),num(12,'res')),{fade:850}); await S.wait(300);
+  await S.glow('res');
+}
+
+/* ───────── 10 · the root of four equal powers ───────── */
+const p45=(P,k)=>pw(num(4,P+'b'+k,'cA'),num(5,P+'e'+k,'cF'));
+const sum45=P=>row([0,1,2,3].map(k=>[k?opr('+',P+'p'+k):null,p45(P,k)]));
+const start10=()=>rt(sum45('m'),'mr');
+async function run10(S){
+  const Y=[74,154,234,314,394];
+  await S.begin(start10(),lead(start10(),Y[0]));
+  // four of the same
+  await S.show('main',rt(brc(sum45('m'),num(4,'mc','cO'),'u','mbr','cO'),'mr'),{fade:900}); await S.wait(1100);
+  at(S,'w1',Y[1]+14);
+  await S.show('w1',row(opr('=','q1'),rt(row(num(4,'a4','cO'),opr('·','am'),pw(num(4,'ab','cA'),num(5,'ae','cF'))),'ar')),{from:{a4:'mc',ab:'mb0',ae:'me0',ar:'mr'},dur2:1300}); await S.wait(1100);
+  // the four in front is a power of four too
+  await S.show('w1',row(opr('=','q1'),rt(row(pw(num(4,'a4','cA'),num(1,'a1','cO')),opr('·','am'),pw(num(4,'ab','cA'),num(5,'ae','cF'))),'ar')),{fade:900}); await S.wait(1000);
+  // multiplying: the exponents add up
+  at(S,'w2',Y[2]+14);
+  await S.show('w2',row(opr('=','q2'),rt(pw(num(4,'bb','cA'),row(num(1,'b1','cO'),opr('+','bp'),num(5,'b5','cF'))),'br')),{from:{bb:'ab',b1:'a1',b5:'ae',br:'ar'},dur2:1300}); await S.wait(1000);
+  await S.show('w2',row(opr('=','q2'),rt(pw(num(4,'bb','cA'),num(6,'b1')),'br')),{dur:1100}); await S.wait(1000);
+  // six is three and three: two equal factors
+  at(S,'w3',Y[3]+14);
+  await S.show('w3',row(opr('=','q3'),rt(row(pw(num(4,'c1','cA'),num(3,'c1e','cF')),opr('·','cm'),pw(num(4,'c2','cA'),num(3,'c2e','cF'))),'cr')),{from:{c1:'bb',c2:'bb',c1e:'b1',c2e:'b1',cr:'br'},dur2:1300}); await S.wait(1000);
+  await S.wiggle(['c1','c1e','c2','c2e'],2200); await S.wait(500);
+  // one of them is the root
+  at(S,'w4',Y[4]+14);
+  await S.show('w4',row(opr('=','q4'),pw(num(4,'d1','cA'),num(3,'d1e','cF'))),{from:{d1:'c1',d1e:'c1e'},dur2:1300}); await S.wait(900);
+  await S.show('w4',row(opr('=','q4'),pw(num(4,'d1','cA'),num(3,'d1e','cF')),opr('=','q5'),num(4,'d2','cA'),opr('·','dm'),num(4,'d3','cA'),opr('·','dn'),num(4,'d4','cA')),{from:{d2:'d1',d3:'d1',d4:'d1'},dur2:1300}); await S.wait(900);
+  await S.show('w4',row(opr('=','q4'),pw(num(4,'d1','cA'),num(3,'d1e','cF')),opr('=','q5'),num(4,'d2','cA'),opr('·','dm'),num(4,'d3','cA'),opr('·','dn'),num(4,'d4','cA'),opr('=','q6'),num(64,'res')),{fade:850}); await S.wait(300);
+  await S.glow('res');
+}
+
+/* ───────── 11 · show that: "?" over the "=" until both sides are the same ───────── */
+const start11a=()=>row(num(6,'a','cA'),rt(num(2,'b','cB'),'r1'),eqQ('q'),rt(num(72,'c'),'r2'));
+async function run11a(S){
+  const Y=[80,160,240,320], PL=row(num(6,'a','cA'),rt(num(2,'b','cB'),'r1'));
+  await S.begin(start11a(),lead(PL,Y[0],30,X11));
+  // six times six is 36: six is the root of 36
+  S.cfg('sd',{cx:500,y:Y[1],s:24,al:'l'});
+  await S.show('sd',row(num(6,'s1','cA'),opr('·','sm'),num(6,'s2','cA'),opr('=','sq'),num(36,'s3','cA')),{from:{s1:'a',s2:'a'},dur2:1300}); await S.wait(700);
+  await S.wiggle(['s1','s2'],2200); await S.wait(500);
+  at(S,'w1',Y[1],30,X11);
+  await S.show('w1',row(opr('=','q1'),rt(num(36,'w36','cA'),'wr1'),opr('·','wm'),rt(num(2,'w2','cB'),'wr2')),{from:{w36:'s3',w2:'b',wr2:'r1'},dur2:1300}); await S.wait(1000);
+  // the product of the roots is the root of the product
+  at(S,'w2',Y[2],30,X11);
+  await S.show('w2',row(opr('=','q2'),rt(row(num(36,'x1','cA'),opr('·','xm'),num(2,'x2','cB')),'xr')),{from:{x1:'w36',x2:'w2'},dur2:1300}); await S.wait(1000);
+  at(S,'w3',Y[3],30,X11);
+  await S.show('w3',row(opr('=','q3'),rt(num(72,'y1'),'yr')),{from:{yr:'xr'},dur2:1300}); await S.wait(900);
+  // the same as the other side: the question mark goes
+  await S.all(S.wiggle(['y1','yr'],2200),S.wiggle(['c','r2'],2200)); await S.wait(500);
+  await S.show('main',row(PL,opr('=','q'),rt(num(72,'c'),'r2')),{dur:1000}); await S.wait(200);
+  await S.glow('q');
+}
+const start11b=()=>row(rt(num(1000,'a','cA'),'r1'),eqQ('q'),num(10,'c'),rt(num(10,'d'),'r2'));
+async function run11b(S){
+  const Y=[80,160,240,320], PL=rt(num(1000,'a','cA'),'r1');
+  await S.begin(start11b(),lead(PL,Y[0],30,X11));
+  // a thousand is a hundred times ten
+  at(S,'w1',Y[1],30,X11);
+  await S.show('w1',row(opr('=','q1'),rt(row(num(100,'x1','cA'),opr('·','xm'),num(10,'x2','cB')),'xr')),{from:{x1:'a',x2:'a',xr:'r1'},dur2:1300}); await S.wait(1000);
+  // the root of the product is the product of the roots
+  at(S,'w2',Y[2],30,X11);
+  await S.show('w2',row(opr('=','q2'),rt(num(100,'y1','cA'),'yr1'),opr('·','ym'),rt(num(10,'y2','cB'),'yr2')),{from:{y1:'x1',y2:'x2'},dur2:1300}); await S.wait(1000);
+  // a hundred is ten times ten: two equal factors, and one of them is the root
+  S.cfg('sd',{cx:500,y:Y[2],s:24,al:'l'});
+  await S.show('sd',row(num(100,'s0','cA'),opr('=','sq'),num(10,'s1','cA'),opr('·','sm'),num(10,'s2','cA')),{from:{s0:'y1'},dur2:1300}); await S.wait(700);
+  await S.wiggle(['s1','s2'],2200); await S.wait(500);
+  at(S,'w3',Y[3],30,X11);
+  await S.show('w3',row(opr('=','q3'),num(10,'z1','cA'),opr('·','zm'),rt(num(10,'z2','cB'),'zr')),{from:{z1:'s1',z2:'y2',zr:'yr2'},dur2:1300}); await S.wait(1000);
+  // the dot can be left out
+  await S.show('w3',row(opr('=','q3'),num(10,'z1','cA'),rt(num(10,'z2','cB'),'zr')),{dur:1000}); await S.wait(900);
+  // the same as the other side: the question mark goes
+  await S.all(S.wiggle(['z1','z2','zr'],2200),S.wiggle(['c','d','r2'],2200)); await S.wait(500);
+  await S.show('main',row(PL,opr('=','q'),num(10,'c'),rt(num(10,'d'),'r2')),{dur:1000}); await S.wait(200);
+  await S.glow('q');
+}
+
+
+/* ───────── the problems and their parts ───────── */
+const E3a={a:7,m:3,n:5}, E3b={a:10,m:8,n:3};
+const PROBS={
+  p2:['320000','0.09','0.00018'].map(x=>({pic:()=>startSci({x}),run:S=>runToSci(S,{x})})),
+  p3:[{pic:()=>startMul(E3a),run:S=>runMul(S,E3a)},
+      {pic:()=>row(startDiv(E3b)),run:(S,m)=>runDiv(S,E3b,m),methods:['cross','comb'],E:E3b},
+      {pic:start3c,run:run3c}],
+  p4:MID.map(E=>({icon:()=>midIcon(E),say:`${qv(E.a)} ? ${qv(E.b)}`,run:S=>runMid(S,E)})),
+  p5:[{label:'−2 + (−5)',sg:S=>SG.sAdd(S,-2,-5)},{label:'2 · (−5)',sg:S=>SG.sMul(S,2,-5)},{label:'−2 · (−5)',sg:S=>SG.sMul(S,-2,-5)}],
+  p6:[{pic:start6a,run:run6a},{pic:start6b,run:run6b},{pic:start6c,run:run6c}],
+  p8:[{pic:start8a,run:run8a},
+      {pic:()=>startTree(E8b),run:(S,m)=>m==='common'?divCommon(S,E8b):m==='inverse'?divInverse(S,E8b):divKCF(S,E8b),methods:['common','inverse','kcf'],E:E8b},
+      {pic:()=>startTree(E8c),run:S=>mulArea(S,E8c)}],
+  p9:[{pic:()=>startPM({a:3,b:12}),run:S=>runPM(S,{a:3,b:12})},{pic:start9b,run:run9b},{pic:()=>startQB({a:75,b:3}),run:S=>runQB(S,{a:75,b:3})}],
+  p10:[{pic:start10,run:run10}],
+  p11:[{pic:start11a,run:run11a},{pic:start11b,run:run11b}],
+};
+
+/* ───────── static pictures ───────── */
+function svgStack(trees,s,gap=4,pad=6){
+  const Ls=trees.map(t=>lay(t,s)), w=Math.max(...Ls.map(L=>L.w))+2*pad; let y=pad; const pos=[];
+  Ls.forEach(L=>{ y+=L.asc; pos.push(y); y+=L.desc+gap; });
+  const h=y-gap+pad, svg=el('svg',{viewBox:`0 0 ${w} ${h}`,width:w,height:h,class:'ic','aria-hidden':'true'});
+  Ls.forEach((L,i)=>{ const x0=(w-L.w)/2; L.leaves.forEach(l=>mkLeaf(svg,shift(l,x0,pos[i]))); });
+  return {svg,w,h,pad,Ls};
+}
+const svgOf=(tree,s,pad)=>svgStack([tree],s,4,pad).svg;
+const bd=F=>F.whole?1:F.d;
+// method buttons: a small picture of each method
+const ICON={
+  cross:E=>{ const f=()=>N(E.a,null,'cA'); return svgOf(frc(row(strike(f()),opr('·'),f()),strike(f())),20); },
+  comb:E=>{ const f=()=>N(E.a,null,'cA'); return svgOf(row(frc(f(),f()),opr('='),num(1)),20); },
+  common(E){ const a=mkF(E.A), b=mkF(E.B), L=lcm(a.d,b.d);
+    return svgOf(row(frc(num(a.n*L/a.d,null,'cA'),num(L,null,'cF'),null,'cA'),opr('/'),frc(num(b.n*L/b.d,null,'cB'),num(L,null,'cF'),null,'cB')),20); },
+  inverse(E){ const B=E.B; return svgOf(row(term(B,'x','cB'),opr('·'),frc(bd(B),B.n,null,'cF'),opr('='),num(1)),20); },
+  kcf(E){ const B=E.B; return svgOf(row(opr('/'),term(B,'x','cB'),opr('→',null,'mut'),opr('·',null,'cF'),frc(bd(B),B.n,null,'cB')),20); },
+};
+function say(n){
+  if(!n) return '';
+  if(n.t==='n'||n.t==='o') return n.text;
+  if(n.t==='d') return DM;
+  if(n.t==='E') return '=?';
+  if(n.t==='R') return '√('+say(n.c)+')';
+  if(n.t==='r') return n.ch.map(say).join(' ').replace(/\s+/g,' ').trim();
+  if(n.t==='p') return say(n.b)+'^'+(n.e.t!=='n'?'('+say(n.e)+')':say(n.e));
+  if(n.t==='f') return '('+say(n.nu)+') / ('+say(n.de)+')';
+  if(n.t==='P') return '('+say(n.c)+')';
+  if(n.t==='B') return say(n.c);
+  return '';
+}
+// the legend: a disc is 1, a ring is −1
+function tokLegend(){
+  const svg=el('svg',{viewBox:'0 0 330 34',width:330,height:34,class:'ic','aria-hidden':'true'});
+  const disc=(x)=>{ el('circle',{cx:x,cy:17,r:13,fill:'var(--cA)'},svg); el('path',{d:`M${x-6} 17h12M${x} 11v12`,stroke:'var(--tokink)','stroke-width':3,'stroke-linecap':'round'},svg); };
+  const ring=(x)=>{ el('circle',{cx:x,cy:17,r:11.5,fill:'var(--panel)',stroke:'var(--cB)','stroke-width':3},svg); el('path',{d:`M${x-6} 17h12`,stroke:'var(--cB)','stroke-width':3,'stroke-linecap':'round'},svg); };
+  const put=(tree,x)=>{ const L=lay(tree,20); L.leaves.forEach(l=>mkLeaf(svg,shift(l,x,24))); };
+  disc(16); put(row(opr('='),num(1,null,'cA')),32);
+  ring(130); put(row(opr('='),num('−1',null,'cB')),146);
+  disc(248); ring(276); put(row(opr('='),num(0)),292);
+  return svg;
+}
+function statics(){
+  // the decimal mark: point or comma
+  const sw=document.getElementById('dmsw'); sw.replaceChildren();
+  [',','.'].forEach(c=>{ const bt=document.createElement('button'); bt.type='button'; bt.setAttribute('aria-label','0'+c+'5'); bt.setAttribute('aria-pressed',DM===c);
+    bt.className=DM===c?'on':''; const sv=DM; DM=c; bt.appendChild(svgOf(row(num(0),dmk(),num(5)),18)); DM=sv;
+    bt.addEventListener('click',()=>setDM(c)); sw.appendChild(bt); });
+  // the problem's number in the margin, all at one size
+  document.querySelectorAll('.sec').forEach(sec=>sec.querySelector('.glyph').replaceChildren(svgOf(num(sec.dataset.sec.slice(1)),44,2)));
+}
+
+/* ───────── wiring ───────── */
+let last=null, active=null; const stages=[];
+// while an animation plays, the rest of the page steps back
+let releaseT=null, dropT=null;
+function setFocus(sec){
+  clearTimeout(releaseT); clearTimeout(dropT);
+  const prev=active; active=sec;
+  if(sec){ document.querySelectorAll('.sec.active').forEach(x=>{ if(x!==sec) x.classList.remove('active'); }); sec.classList.add('active'); }
+  // the stage that just played stays on top of the dimmer until the dimmer has faded away
+  else if(prev) dropT=setTimeout(()=>prev.classList.remove('active'),2100);
+  document.body.classList.toggle('focusing',!!sec);
+}
+function setDM(c){
+  if(c===DM) return; DM=c; try{ localStorage.setItem('wl-decimal-mark',c); }catch(e){}
+  statics(); stages.forEach(q=>q.reset()); setFocus(null);
+}
+document.addEventListener('keydown',e=>{
+  if(e.code!=='Space'||!last||e.target.closest('button,input,textarea')) return;
+  e.preventDefault(); last.paused?last.resume():last.pause(); stages.forEach(q=>q.ppShow());
+});
+const ICO_PAUSE='<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><rect x="2" y="2" width="5" height="16" rx="1.5" fill="currentColor"/><rect x="11" y="2" width="5" height="16" rx="1.5" fill="currentColor"/></svg>';
+const ICO_PLAY='<svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><path d="M3 2.5 L16 10 L3 17.5 Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+function ppOf(st,pp){ return ()=>{ pp.innerHTML=st.paused?ICO_PLAY:ICO_PAUSE; pp.setAttribute('aria-label',st.paused?'▶':'❚❚'); pp.setAttribute('aria-pressed',st.paused); }; }
+const markB=(arr,i)=>arr.forEach((b,j)=>{ b.classList.toggle('on',i===j); b.setAttribute('aria-pressed',i===j); });
+
+statics();
+// problems 2 to 11: one button per part; a part with several methods first shows the methods
+document.querySelectorAll('.sec[data-sec]').forEach(sec=>{
+  const key=sec.dataset.sec, list=PROBS[key]; if(!list) return;
+  const svg=sec.querySelector('svg.stage'), st=key==='p5'?new SG.Stage(svg):new Stage(svg);
+  const exBar=sec.querySelector('.exs'), mBar=sec.querySelector('.methods'), rep=sec.querySelector('.replay');
+  let cur=null, curM=null; if(mBar) mBar.hidden=true;
+  const pp=document.createElement('button'); pp.type='button'; pp.className='replay pp'; rep.before(pp);
+  const ppShow=ppOf(st,pp);
+  pp.addEventListener('click',()=>{ st.paused?st.resume():st.pause(); ppShow(); last=st; });
+  st.onplay=focus=>{ last=st; setTimeout(ppShow); setFocus(focus===false?(active===sec?null:active):sec); };
+  st.onend=()=>{ clearTimeout(releaseT); releaseT=setTimeout(()=>{ if(active===sec) setFocus(null); },1300); };
+  const setRep=v=>{ rep.hidden=v; pp.hidden=v; }; setRep(true);
+  const exBtns=[]; let mBtns=[];
+  const run=(i,m,keep)=>{ const x=list[i]; return x.sg?st.play(x.sg):st.play(S=>x.run(S,m),keep,true); };
+  const draw=()=>list.forEach((x,i)=>{ const b=exBtns[i];
+    if(x.sg){ b.setAttribute('aria-label',x.label); b.innerHTML='<span style="white-space:pre">'+(x.label.match(SG.RX)||[]).map(w=>`<span class="${SG.kind(w)}">${w}</span>`).join('')+'</span>'; }
+    else if(x.icon){ b.setAttribute('aria-label',x.say); b.replaceChildren(x.icon()); }
+    else { b.setAttribute('aria-label',say(x.pic())); b.replaceChildren(svgOf(x.pic(),key==='p6'?17:20)); } });
+  list.forEach((x,i)=>{
+    const b=document.createElement('button'); b.type='button'; b.id=`ex-${key}-${i}`;
+    b.addEventListener('click',()=>{
+      cur=i; curM=null; markB(exBtns,i);
+      if(x.methods){
+        mBar.textContent=''; mBtns=x.methods.map((m,j)=>{
+          const mb=document.createElement('button'); mb.type='button'; mb.id=`m-${key}-${m}`; mb.setAttribute('aria-label',m);
+          mb.appendChild(ICON[m](x.E));
+          mb.addEventListener('click',()=>{ curM=m; markB(mBtns,j); setRep(false); run(cur,m,true); });
+          mBar.appendChild(mb); return mb; });
+        mBar.hidden=false; setRep(true);
+        st.play(async S=>{ await S.show('main',x.pic()); S.st.introDone=true; });
+      } else { if(mBar) mBar.hidden=true; setRep(false); run(i,null,false); }
+    });
+    exBar.appendChild(b); exBtns.push(b);
+  });
+  draw();
+  rep.addEventListener('click',()=>{ if(cur!==null&&(!list[cur].methods||curM)) run(cur,curM,false); });
+  // a new decimal mark: redraw the buttons and clear the stage
+  const reset=()=>{ st.resume(); st.gen++; st.svg.textContent=''; cur=null; curM=null; markB(exBtns,-1); mBtns=[]; if(mBar){ mBar.hidden=true; mBar.textContent=''; } setRep(true); draw(); };
+  stages.push({st,ppShow,reset});
+});
+
+// problem 1: the sets keep their numbers until ↺
+(function(){
+  const sec=document.querySelector('[data-sec=p1]'), st=new NStage(sec.querySelector('svg.stage'));
+  const exBar=sec.querySelector('.exs'), pp=sec.querySelector('.pp'), rs=sec.querySelector('.rs');
+  const ppShow=ppOf(st,pp); let running=false;
+  pp.addEventListener('click',()=>{ st.paused?st.resume():st.pause(); ppShow(); last=st; });
+  st.onplay=()=>{ last=st; setTimeout(ppShow); pp.hidden=false; rs.hidden=false; setFocus(sec); };
+  st.onend=()=>{ clearTimeout(releaseT); releaseT=setTimeout(()=>{ if(active===sec) setFocus(null); },1300); };
+  const KEYS=['N','Q','R'], btns=[];
+  // a number that is still being tested goes straight to its set
+  const finish=()=>{ if(P1.cur){ const E=P1.cur; P1.cur=null; st.stop(); clearHi(); putTok(st,E); SC.tok.get(E.id).setAttribute('opacity',1); } else st.stop(); };
+  KEYS.forEach((k,i)=>{ const b=document.createElement('button'); b.type='button'; b.id='ex-p1-'+i; b.setAttribute('aria-label',GL[k]);
+    b.appendChild(svgOf(num(GL[k],null,'ds'),24,4));
+    b.addEventListener('click',()=>{ finish(); markB(btns,i); clearHi(); st.play(S=>runSets(S,k)); });
+    exBar.appendChild(b); btns.push(b); });
+  rs.addEventListener('click',()=>{ finish(); for(const e of SC.tok.values()) e.remove(); SC.tok.clear(); clearHi(); markB(btns,-1); rs.hidden=true; pp.hidden=true; setFocus(null); });
+  buildScene(st);
+  // a new decimal mark: the numbers with decimals are redrawn where they are
+  stages.push({st,ppShow,reset(){ finish(); drawIcons(); for(const id of [...SC.tok.keys()]) putTok(st,NUMS[id]); clearHi(); markB(btns,-1); }});
+})();
+</script>
+
+</html>
