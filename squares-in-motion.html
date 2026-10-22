@@ -124,6 +124,9 @@ body.focusing .note{opacity:.4}
   <section class="sec" data-sec="quot"><div class="glyph" aria-hidden="true"></div>
     <div class="card"><svg class="stage" viewBox="0 0 720 350"></svg>
       <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
+  <section class="sec" data-sec="mix"><div class="glyph" aria-hidden="true"></div>
+    <div class="card"><svg class="stage" viewBox="0 0 720 500"></svg>
+      <div class="bar"><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
   <section class="sec" data-sec="half"><div class="glyph" aria-hidden="true"></div>
     <div class="card"><svg class="stage" viewBox="0 0 720 370"></svg>
       <div class="bar"><span class="hsw" id="hsw"></span><div class="exs"></div><button class="replay" type="button" aria-label="↻">↻</button></div></div></section>
@@ -438,7 +441,7 @@ const geq=(v,k,op='≥')=>row(V(v,'n'+k+'v'),opr(op,'n'+k+'o'),num(0,'n'+k+'0'))
 
 /* ───────── 1 · a square of n by n cells, and back from its area to its side ───────── */
 // the square stands at the left; the working, and then what it all shows, at the right
-const SQC=195, RX=380, RY=[70,150,230,310];
+const SQC=195, RX=380, RY=[70,150,230,310,390];
 const startSq=E=>pw(num(E.n,'b','cA'),num(2,'e','cF'));
 async function runSq(S,E){
   const n=E.n, N=n*n, side=n*CS, x0=SQC-side/2, yb=420, s=30, ls=24;
@@ -508,7 +511,13 @@ async function runSq(S,E){
   const d2=row(d1,opr('=','dq'),pw(num(n,'d3','cA'),num(2,'d4','cF')));
   await S.show('l4',d2,{from:{d3:'a1'},dur2:1300}); await S.wait(600);
   await S.show('l4',row(d2,opr('=','dq2'),num(N,'d5','cO')),{from:{d5:'res'},dur2:1300}); await S.wait(500);
-  await S.all(S.wiggle(['d1'],2200),S.wiggle(['d5'],2200));
+  await S.all(S.wiggle(['d1'],2200),S.wiggle(['d5'],2200)); await S.wait(800);
+  // squared is the root times itself: √N · √N = N
+  S.cfg('l5',{cx:RX,y:RY[4],s,al:'l'});
+  const e1=row(rt(num(N,'e1','cO'),'er1'),opr('·','em'),rt(num(N,'e2','cO'),'er2'));
+  await S.show('l5',e1,{from:{e1:'d1',e2:'d1',er1:'dr',er2:'dr'},dur2:1300}); await S.wait(600);
+  await S.show('l5',row(e1,opr('=','eq'),num(N,'e3','cO')),{from:{e3:'d5'},dur2:1300}); await S.wait(500);
+  await S.all(S.wiggle(['e1','er1','em','e2','er2'],2200),S.wiggle(['e3'],2200));
 }
 
 /* ───────── 2 · roots between the perfect squares ───────── */
@@ -789,7 +798,180 @@ async function runQB(S,E){
   await S.glow('wv');
 }
 
-/* ───────── 5 · the root is the power one half ───────── */
+/* ───────── 5 · mixed problems: the definitions and rules used together ───────── */
+const MXL=250;   // the "=" of the working lines stands here, so long lines fit
+const mAt=(S,line,y)=>S.cfg(line,{cx:MXL,y,s:30,al:'l'});
+const mLead=(P,y)=>({cx:MXL-W(P,30),y,s:30,al:'l'});
+// a root that never ends: its first digits and "…", then rounded
+async function never(S,line,y,str,rnd){
+  mAt(S,line,y);
+  const C=row(opr('=',line+'q'),dn(str,line+'d'),num('…',line+'e'));
+  await S.show(line,C,{fade:900}); await S.wait(900);
+  await S.show(line,row(C,opr('≈',line+'a'),dn(rnd,line+'r')),{fade:850}); await S.wait(300);
+  const k=[line+'rp']; for(let j=0;j<String(rnd).replace('.','').length;j++) k.push(line+'r'+j);
+  await S.wiggle(k,2000);
+}
+
+/* a number in front of a root goes in under it: 3 is the root of 3², which is 9 */
+const startM1=()=>row(num(3,'a','cA'),rt(num(8,'b','cB'),'r'));
+async function runM1(S){
+  const Y=[70,150,230,310], P=startM1();
+  await S.begin(P,mLead(P,Y[0]));
+  mAt(S,'w1',Y[1]);
+  const A=row(opr('=','q1'),rt(pw(num(3,'c3','cA'),num(2,'c2','cF')),'cr'),opr('·','cm'),rt(num(8,'cb','cB'),'cr2'));
+  await S.show('w1',A,{from:{c3:'a',cb:'b',cr2:'r'},dur2:1300}); await S.wait(1100);
+  await S.show('w1',row(A,opr('=','q1b'),rt(num(9,'d9','cA'),'dr'),opr('·','dm'),rt(num(8,'db','cB'),'dr2')),{from:{d9:'c3',dr:'cr',db:'cb',dr2:'cr2'},dur2:1300}); await S.wait(1000);
+  // the product of the roots is the root of the product
+  mAt(S,'w2',Y[2]);
+  const B=row(opr('=','q2'),rt(row(num(9,'e9','cA'),opr('·','em'),num(8,'eb','cB')),'er'));
+  await S.show('w2',B,{from:{e9:'d9',eb:'db',er:'dr'},dur2:1300}); await S.wait(1000);
+  await S.show('w2',row(B,opr('=','q2b'),rt(num(72,'f'),'fr')),{from:{fr:'er'},dur2:1300}); await S.wait(1000);
+  // 72 is not a square, so its root never ends
+  await never(S,'w3',Y[3],'8.4852','8.5');
+}
+
+/* two equal roots added, then divided by a root */
+const m2top=()=>row(rt(num(5,'a1','cA'),'ra1'),opr('+','ap'),rt(num(5,'a2','cA'),'ra2'));
+const startM2=()=>frc(m2top(),rt(num(2,'b','cB'),'rb'),'f');
+async function runM2(S){
+  const Y=[104,206,298,388,470], P=startM2(), den=k=>rt(num(2,k,'cB'),k+'r');
+  await S.begin(P,mLead(P,Y[0]));
+  // two of the same
+  await S.show('main',frc(brc(m2top(),num(2,'n2'),'o','nb'),rt(num(2,'b','cB'),'rb'),'f'),{fade:900}); await S.wait(1100);
+  mAt(S,'w1',Y[1]);
+  const top=a=>row(a,opr('·','cm'),rt(num(5,'c5','cA'),'cr'));
+  await S.show('w1',row(opr('=','q1'),frc(top(num(2,'c2')),den('cb'),'cf')),{from:{c2:'n2',c5:'a1',cr:'ra1',cb:'b',cbr:'rb','cf.bar':'f.bar'},dur2:1300}); await S.wait(1100);
+  // 2 is the root of 2², which is 4
+  await S.show('w1',row(opr('=','q1'),frc(top(rt(pw(num(2,'c2'),num(2,'cx','cF')),'c2r')),den('cb'),'cf')),{fade:900}); await S.wait(1000);
+  await S.show('w1',row(opr('=','q1'),frc(top(rt(num(4,'c2'),'c2r')),den('cb'),'cf')),{dur:1000}); await S.wait(1000);
+  // the product of the roots is the root of the product
+  mAt(S,'w2',Y[2]);
+  const B=rt(row(num(4,'d4'),opr('·','dm'),num(5,'d5','cA')),'dr');
+  await S.show('w2',row(opr('=','q2'),frc(B,den('db'),'df')),{from:{d4:'c2',d5:'c5',dr:'c2r',db:'cb',dbr:'cbr','df.bar':'cf.bar'},dur2:1300}); await S.wait(1000);
+  await S.show('w2',row(opr('=','q2'),frc(rt(num(20,'d4','cA'),'dr'),den('db'),'df')),{dur:1100}); await S.wait(1000);
+  // the root over the root is the root of the fraction
+  mAt(S,'w3',Y[3]);
+  await S.show('w3',row(opr('=','q3'),rt(frc(num(20,'e1','cA'),num(2,'e2','cB'),'ef'),'er')),{from:{e1:'d4',e2:'db',er:'dr','ef.bar':'df.bar'},dur2:1300}); await S.wait(1000);
+  await S.show('w3',row(opr('=','q3'),rt(num(10,'e1'),'er')),{dur:1100}); await S.wait(1000);
+  // 10 is not a square, so its root never ends
+  await never(S,'w4',Y[4],'3.1622','3.2');
+}
+
+/* a root split into a square and the rest, then roots of the same kind counted */
+const startM3=()=>row(rt(num(50,'a','cA'),'ra'),opr('−','mo'),rt(num(2,'b','cB'),'rb'));
+async function runM3(S){
+  const Y=[70,150,230,310,390], P=rt(num(50,'a','cA'),'ra'), R2=k=>rt(num(2,k,'cB'),k+'r');
+  await S.begin(startM3(),mLead(P,Y[0]));
+  // 50 is 25 · 2, and 25 is a square
+  mAt(S,'w1',Y[1]);
+  await S.show('w1',row(opr('=','q1'),rt(row(num(25,'c1','cA'),opr('·','cm'),num(2,'c2','cB')),'cr'),opr('−','co'),R2('cb')),{from:{c1:'a',c2:'a',cr:'ra',co:'mo',cb:'b',cbr:'rb'},dur2:1300}); await S.wait(1000);
+  // the root of the product is the product of the roots
+  mAt(S,'w2',Y[2]);
+  await S.show('w2',row(opr('=','q2'),rt(num(25,'d1','cA'),'d1r'),opr('·','dm'),R2('d2'),opr('−','do'),R2('db')),{from:{d1:'c1',d2:'c2',do:'co',db:'cb',dbr:'cbr'},dur2:1300}); await S.wait(1000);
+  mAt(S,'w3',Y[3]);
+  await S.show('w3',row(opr('=','q3'),num(5,'e1','cA'),opr('·','em'),R2('e2'),opr('−','eo'),R2('eb')),{from:{e1:'d1',e2:'d2',e2r:'d2r',eo:'do',eb:'db',ebr:'dbr'},dur2:1300}); await S.wait(1000);
+  // five √2 take away one √2
+  await S.show('w3',row(opr('=','q3'),num(5,'e1','cA'),opr('·','em'),R2('e2'),opr('−','eo'),num(1,'e3','cF'),opr('·','em2','cF'),R2('eb')),{fade:900}); await S.wait(900);
+  await S.all(S.wiggle(['e2','e2r'],2000),S.wiggle(['eb','ebr'],2000)); await S.wait(500);
+  await S.show('w3',row(opr('=','q3'),par(row(num(5,'e1','cA'),opr('−','eo'),num(1,'e3','cF')),'eP'),opr('·','em'),R2('e2')),{dur:1400}); await S.wait(1000);
+  mAt(S,'w4',Y[4]);
+  const F=row(opr('=','q4'),num(4,'f1'),opr('·','fm'),R2('f2'));
+  await S.show('w4',F,{from:{f2:'e2',f2r:'e2r'},dur2:1300}); await S.wait(900);
+  // 2 is not a square, so its root never ends
+  await S.show('w4',row(F,opr('=','fq'),dn('5.6568','fd'),num('…','fe')),{fade:900}); await S.wait(900);
+  await S.show('w4',row(F,opr('=','fq'),dn('5.6568','fd'),num('…','fe'),opr('≈','fa'),dn('5.7','fr')),{fade:850}); await S.wait(300);
+  await S.wiggle(['fr0','frp','fr1'],2000);
+}
+
+/* a product squared: the bracket twice, then each kind together */
+const startM4=()=>pw(par(row(num(2,'a','cA'),rt(num(3,'b','cB'),'rb')),'p'),num(2,'e','cF'));
+async function runM4(S){
+  const Y=[76,156,236,316,396], P=startM4(), R3=k=>rt(num(3,k,'cB'),k+'r');
+  await S.begin(P,mLead(P,Y[0]));
+  // squared is the number times itself
+  mAt(S,'w1',Y[1]);
+  await S.show('w1',row(opr('=','q1'),num(2,'c1','cA'),R3('c2'),opr('·','cm'),num(2,'c3','cA'),R3('c4')),{from:{c1:'a',c2:'b',c2r:'rb',c3:'a',c4:'b',c4r:'rb'},dur2:1300}); await S.wait(1000);
+  // the hidden dots
+  await S.show('w1',row(opr('=','q1'),num(2,'c1','cA'),opr('·','cn'),R3('c2'),opr('·','cm'),num(2,'c3','cA'),opr('·','co'),R3('c4')),{dur:900,fade:800}); await S.wait(1000);
+  // the twos together, the roots together
+  mAt(S,'w2',Y[2]);
+  await S.show('w2',row(opr('=','q2'),num(2,'d1','cA'),opr('·','dm'),num(2,'d3','cA'),opr('·','dn'),R3('d2'),opr('·','do'),R3('d4')),
+    {from:{d1:'c1',d2:'c2',d2r:'c2r',d3:'c3',d4:'c4',d4r:'c4r'},curve:{d3:{y:-26},d2:{y:26},d2r:{y:26}},dur2:1400}); await S.wait(1000);
+  // 2 · 2 is 4, and a root times itself is the number under it
+  mAt(S,'w3',Y[3]);
+  await S.show('w3',row(opr('=','q3'),num(4,'e1','cA'),opr('·','em'),num(3,'e2','cB')),{from:{e1:'d1',e2:'d2'},dur2:1300}); await S.wait(900);
+  mAt(S,'w4',Y[4]);
+  await S.show('w4',row(opr('=','q4'),num(12,'res')),{fade:850}); await S.wait(300);
+  await S.glow('res');
+}
+
+/* a product of roots plus a root squared */
+const startM5=()=>row(rt(num(12,'a1','cA'),'r1'),opr('·','m'),rt(num(3,'a2','cB'),'r2'),opr('+','p'),pw(par(rt(num(7,'b'),'r3'),'P'),num(2,'e','cF')));
+async function runM5(S){
+  const Y=[76,156,236,316,396], P=startM5();
+  await S.begin(P,mLead(P,Y[0]));
+  const sq=k=>pw(par(rt(num(7,k),k+'r'),k+'P'),num(2,k+'e','cF'));
+  // the product of the roots is the root of the product
+  mAt(S,'w1',Y[1]);
+  await S.show('w1',row(opr('=','q1'),rt(row(num(12,'c1','cA'),opr('·','cm'),num(3,'c2','cB')),'cr'),opr('+','cp'),sq('c7')),{from:{c1:'a1',c2:'a2',cr:'r1',cp:'p',c7:'b',c7r:'r3',c7e:'e'},dur2:1300}); await S.wait(1000);
+  // squared is the root times itself
+  mAt(S,'w2',Y[2]);
+  await S.show('w2',row(opr('=','q2'),rt(num(36,'d1'),'dr'),opr('+','dp'),rt(num(7,'d2'),'d2r'),opr('·','dm'),rt(num(7,'d3'),'d3r')),{from:{dr:'cr',dp:'cp',d2:'c7',d2r:'c7r',d3:'c7',d3r:'c7r'},dur2:1300}); await S.wait(1000);
+  // 36 is 6 · 6, and a root times itself is the number under it
+  mAt(S,'w3',Y[3]);
+  await S.show('w3',row(opr('=','q3'),num(6,'e1'),opr('+','ep'),num(7,'e2')),{from:{e1:'d1',ep:'dp',e2:'d2'},dur2:1300}); await S.wait(900);
+  mAt(S,'w4',Y[4]);
+  await S.show('w4',row(opr('=','q4'),num(13,'res')),{fade:850}); await S.wait(300);
+  await S.glow('res');
+}
+
+/* a root over a root, plus the root of a fraction */
+const startM6=()=>row(frc(rt(num(18,'a','cA'),'ra'),rt(num(2,'b','cB'),'rb'),'f1'),opr('+','p'),rt(frc(num(16,'c'),num(25,'d'),'f2'),'rc'));
+async function runM6(S){
+  const Y=[84,182,280,378], P=startM6();
+  await S.begin(P,mLead(P,Y[0]));
+  // first the left term, one step at a time; the right term waits as it is
+  const right=k=>rt(frc(num(16,k+'c'),num(25,k+'d'),k+'f'),k+'r');
+  mAt(S,'w1',Y[1]);
+  const R1=right('h');
+  await S.show('w1',row(opr('=','q1'),frc(rt(num(18,'g1','cA'),'gr1'),rt(num(2,'g2','cB'),'gr2'),'gf'),opr('+','gp'),R1),
+    {from:{g1:'a',g2:'b',gr1:'ra',gr2:'rb','gf.bar':'f1.bar',gp:'p',hc:'c',hd:'d',hr:'rc','hf.bar':'f2.bar'},dur2:1300}); await S.wait(1000);
+  S.focus(['g1','g2','gr1','gr2','gf.bar']); await S.wait(600);
+  // a root over a root is the root of the fraction
+  await S.show('w1',row(opr('=','q1'),rt(frc(num(18,'g1','cA'),num(2,'g2','cB'),'gf'),'gr1'),opr('+','gp'),R1),{dur:1400}); await S.wait(1200);
+  // 18 / 2 is 9
+  await S.show('w1',row(opr('=','q1'),rt(num(9,'g1'),'gr1'),opr('+','gp'),R1),{dur:1200}); await S.wait(1200);
+  // 9 is 3 · 3, so its root is 3
+  await S.show('w1',row(opr('=','q1'),num(3,'g1'),opr('+','gp'),R1),{dur:1200}); await S.wait(1000);
+  S.focus(null); await S.wait(600);
+  // then the right term, one step at a time
+  mAt(S,'w2',Y[2]);
+  await S.show('w2',row(opr('=','q2'),num(3,'i1'),opr('+','ip'),right('j')),{from:{i1:'g1',ip:'gp',jc:'hc',jd:'hd',jr:'hr','jf.bar':'hf.bar'},dur2:1300}); await S.wait(1000);
+  S.focus(['jc','jd','jr','jf.bar']); await S.wait(600);
+  // the root of a fraction is the root over the root
+  await S.show('w2',row(opr('=','q2'),num(3,'i1'),opr('+','ip'),frc(rt(num(16,'jc'),'jr'),rt(num(25,'jd'),'jr2'),'jf')),{dur:1400}); await S.wait(1200);
+  // 16 is 4 · 4 and 25 is 5 · 5
+  await S.show('w2',row(opr('=','q2'),num(3,'i1'),opr('+','ip'),frc(num(4,'jc'),num(5,'jd'),'jf')),{dur:1200}); await S.wait(1000);
+  S.focus(null); await S.wait(600);
+  // the whole number as fifths, then the fifths added
+  mAt(S,'w3',Y[3]);
+  const L=row(opr('=','q3'),num(3,'k1'),opr('+','kp'),frc(num(4,'k4'),num(5,'k5'),'kf'));
+  await S.show('w3',L,{from:{k1:'i1',kp:'ip',k4:'jc',k5:'jd','kf.bar':'jf.bar'},dur2:1300}); await S.wait(1000);
+  const F=frc(num(4,'k4'),num(5,'k5'),'kf');
+  S.focus(['k1']); await S.wait(600);
+  // the whole number as a fraction: 3 is 3/1
+  await S.show('w3',row(opr('=','q3'),frc(num(3,'k1'),num(1,'k2'),'kg'),opr('+','kp'),F),{dur:1300}); await S.wait(1200);
+  // expand by 5, the same as the other denominator
+  await S.show('w3',row(opr('=','q3'),frc(row(num(3,'k1'),opr('·','kx1'),num(5,'k6','cF')),row(num(1,'k2'),opr('·','kx2'),num(5,'k7','cF')),'kg'),opr('+','kp'),F),{dur:1400}); await S.wait(1400);
+  // 3 · 5 is 15 and 1 · 5 is 5
+  const L2=row(opr('=','q3'),frc(num(15,'k1'),num(5,'k2','cF'),'kg'),opr('+','kp'),F);
+  await S.show('w3',L2,{dur:1300}); await S.wait(1200);
+  S.focus(null); await S.wait(600);
+  await S.show('w3',row(L2,opr('=','q4'),frc(num(19,'res'),num(5,'rd'),'rf')),{fade:850}); await S.wait(300);
+  await S.wiggle(['res','rd','rf.bar'],2000);
+}
+
+/* ───────── 6 · the root is the power one half ───────── */
 let HF='f'; try{ HF=localStorage.getItem('wl-half')||'f'; }catch(e){}
 if(HF!=='f'&&HF!=='d') HF='f';
 const half=(k,cls='cF')=>HF==='f'?frc(num(1,k+'n',cls),num(2,k+'d',cls),k,cls):row(num(0,k+'0',cls),dmk(k+'p',cls),num(5,k+'5',cls));
@@ -832,6 +1014,12 @@ const KIND={
   quot:{start:startQuot,btn:E=>E.g?row(startQuot(E),opr('='),frc(rt(qA(E,'xa')),rt(qB(E,'xb')))):startQuot(E),run:runQuot},
   qf:{start:startQF,run:runQF},
   qb:{start:startQB,run:runQB},
+  m1:{start:startM1,run:runM1},
+  m2:{start:startM2,run:runM2},
+  m3:{start:startM3,run:runM3},
+  m4:{start:startM4,run:runM4},
+  m5:{start:startM5,run:runM5},
+  m6:{start:startM6,run:runM6},
   half:{start:startHalf,run:runHalf},
 };
 const BREAK={ten:3,quot:4};   // where the second row of buttons starts
@@ -840,6 +1028,7 @@ const SECTIONS={
   bet:[['bet',{N:20,d:0}],['bet',{N:10,d:1}],['bet',{N:30,d:2}],['bet',{N:2,d:3}]],
   ten:[['up',{d:8,z:1}],['down',{d:5,z:1}],['gen',{}],['pm',{a:18,b:2}],['p2',{a:9,b:100}],['pm',{a:27,b:3}],['pm',{a:2,b:50}],['p2',{a:25,b:10000}]],
   quot:[['inv',{d:5}],['inv',{g:true}],['quot',{a:9,b:49}],['quot',{g:true}],['qf',{a:16,b:81}],['qb',{a:8,b:2}],['qf',{a:36,b:25}],['qb',{a:75,b:3}]],
+  mix:[['m1',{}],['m2',{}],['m3',{}],['m4',{}],['m5',{}],['m6',{}]],
   half:[['half',{a:9}],['half',{a:49}],['half',{a:100}],['half',{g:true}]],
 };
 /* ───────── static pictures ───────── */
@@ -880,7 +1069,7 @@ function statics(){
   [',','.'].forEach(c=>{ const bt=document.createElement('button'); bt.type='button'; bt.setAttribute('aria-label','0'+c+'5'); bt.setAttribute('aria-pressed',DM===c);
     bt.className=DM===c?'on':''; const sv=DM; DM=c; bt.appendChild(svgOf(row(num(0),dmk(),num(5)),18)); DM=sv;
     bt.addEventListener('click',()=>setDM(c)); sw.appendChild(bt); });
-  const G={sq:rt(pw(x(),two())),bet:rt(num(2)),ten:rt(row(x(),opr('·'),y())),quot:rt(frc(x(),y())),half:pw(x(),half(''))};
+  const G={sq:rt(pw(x(),two())),bet:rt(num(2)),ten:rt(row(x(),opr('·'),y())),quot:rt(frc(x(),y())),mix:row(V('a',null,'cA'),rt(V('b',null,'cB'))),half:pw(x(),half(''))};
   document.querySelectorAll('.sec').forEach(sec=>{
     const sv=svgOf(sec.dataset.sum?opr('='):G[sec.dataset.sec],44,2);   /* one size for every symbol */
     sec.querySelector('.glyph').replaceChildren(sv); });
@@ -952,7 +1141,7 @@ document.querySelectorAll('[data-sec]').forEach(sec=>{
   const mark=i=>exBtns.forEach((b,j)=>{ b.classList.toggle('on',i===j); b.setAttribute('aria-pressed',i===j); });
   const run=i=>{ const [k,E]=list[i]; return st.play(S=>KIND[k].run(S,E),false,true); };
   const pic=(k,E)=>(KIND[k].btn||KIND[k].start)(E);
-  const draw=()=>list.forEach(([k,E],i)=>{ const b=exBtns[i]; b.setAttribute('aria-label',say(pic(k,E))); b.replaceChildren(svgOf(pic(k,E),key==='ten'?18:20)); });
+  const draw=()=>list.forEach(([k,E],i)=>{ const b=exBtns[i]; b.setAttribute('aria-label',say(pic(k,E))); b.replaceChildren(svgOf(pic(k,E),key==='ten'||key==='mix'?18:20)); });
   list.forEach((_,i)=>{
     const b=document.createElement('button'); b.type='button'; b.id=`ex-${key}-${i}`;
     b.addEventListener('click',()=>{ cur=i; mark(i); setRep(false); run(i); });
