@@ -2,6 +2,17 @@
 <html lang="zxx">
 <head>
 <meta charset="utf-8">
+<style>
+.ctl{display:grid;grid-template-columns:auto auto;gap:8px;align-self:stretch}
+.ctl>button{min-height:44px;margin:0}
+.ctl .spd{font-size:15px!important;font-variant-numeric:tabular-nums;width:64px;padding-left:0!important;padding-right:0!important}
+.ctl .skip svg{width:22px;height:16px;display:block}
+</style>
+<script>
+/* speed of every stage clock, and the stages that can be skipped to their end */
+var SPEED=1, ALLST=[];
+try{ var v_=+localStorage.getItem('adh-sp'); if([.5,1,1.5,2,4].indexOf(v_)>=0) SPEED=v_; }catch(e){}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>html{color-scheme:light}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}.home{align-self:flex-start;margin-bottom:-24px;font:600 14px/1 var(--font);padding:9px 14px;border-radius:14px;border:1.5px solid var(--rule);background:var(--panel);color:var(--ink);text-decoration:none;position:relative;transition:opacity 2s,border-color .3s}
 .home:hover{border-color:var(--mute)}
@@ -352,17 +363,18 @@ function fracL(T,B,key,s){ const a=W(T,s), b=W(B,s); return G(frc(row(a<b?cellN(
 
 /* ───────── stage + animation context ───────── */
 class Stage{
-  constructor(svg){ this.svg=svg; this.gen=0; this.introDone=false; this.acc=0; this.pausedAt=null; }
-  now(){ return (this.pausedAt??performance.now())-this.acc; }
-  pause(){ if(this.pausedAt==null) this.pausedAt=performance.now(); }
-  resume(){ if(this.pausedAt!=null){ this.acc+=performance.now()-this.pausedAt; this.pausedAt=null; } }
+  constructor(svg){ this.svg=svg; ALLST.push(this); this.gen=0; this.introDone=false; this.acc=0; this.pausedAt=null; }
+  now(){ if(this.pausedAt!=null) return this.pausedAt; if(this.p0==null){ this.v0=0; this.p0=performance.now(); } return this.v0+(performance.now()-this.p0)*SPEED; }
+  rebase(){ if(this.pausedAt==null){ this.v0=this.now(); this.p0=performance.now(); } }
+  pause(){ if(this.pausedAt==null) this.pausedAt=this.now(); }
+  resume(){ if(this.pausedAt!=null){ this.v0=this.pausedAt; this.p0=performance.now(); this.pausedAt=null; } }
   get paused(){ return this.pausedAt!=null; }
   play(script,keep,focus){
-    this.resume(); this.onplay&&this.onplay(!!focus);
+    this.skipping=false; if(this.act) this.act.clear(); this.resume(); this.onplay&&this.onplay(!!focus);
     const gen=++this.gen; if(!keep) this.introDone=false; this.instant=false; this.svg.textContent='';
     this.L={}; for(const k of ['mbg','mcell','mfg','marks','eq','fx']) this.L[k]=el('g',{},this.svg);
     return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
-      .finally(()=>{ if(this.gen===gen&&focus&&this.onend) this.onend(); });
+      .finally(()=>{ if(this.gen===gen) this.skipping=false; if(this.gen===gen&&focus&&this.onend) this.onend(); });
   }
 }
 class Ctx{
@@ -372,10 +384,10 @@ class Ctx{
     const st=this.st, gen=this.gen;
     return new Promise((res,rej)=>{
       if(st.gen!==gen) return rej(CANCEL);
-      if(d<=0){ fn&&fn(1); return res(); }
+      if(d<=0||st.skipping){ fn&&fn(1); return res(); }
       const t0=st.now();
-      const step=()=>{ if(st.gen!==gen) return rej(CANCEL); const t=Math.min(1,(st.now()-t0)/d); fn&&fn(raw?t:ease(t)); t<1?requestAnimationFrame(step):res(); };
-      requestAnimationFrame(step);
+      const step=()=>{ if(!st.act.has(step)) return; if(st.gen!==gen) return rej(CANCEL); const t=st.skipping?1:Math.min(1,(st.now()-t0)/d); fn&&fn(raw?t:ease(t)); t<1?requestAnimationFrame(step):(st.act.delete(step),res()); };
+      (st.act||(st.act=new Set())).add(step); requestAnimationFrame(step);
     });
   }
   tw(dur,fn,raw){ return this.run((this.st.instant||RM)?0:dur,fn,raw); }
@@ -1064,17 +1076,18 @@ function rich(parent,x,y,str,klass,anchor='middle'){
 const symD=s=>s>0?'M-7 0H7M0 -7V7':'M-7 0H7';
 
 class Stage{
-  constructor(svg){ this.svg=svg; this.gen=0; this.acc=0; this.pausedAt=null; }
-  now(){ return (this.pausedAt??performance.now())-this.acc; }
-  pause(){ if(this.pausedAt==null) this.pausedAt=performance.now(); }
-  resume(){ if(this.pausedAt!=null){ this.acc+=performance.now()-this.pausedAt; this.pausedAt=null; } }
+  constructor(svg){ this.svg=svg; ALLST.push(this); this.gen=0; this.acc=0; this.pausedAt=null; }
+  now(){ if(this.pausedAt!=null) return this.pausedAt; if(this.p0==null){ this.v0=0; this.p0=performance.now(); } return this.v0+(performance.now()-this.p0)*SPEED; }
+  rebase(){ if(this.pausedAt==null){ this.v0=this.now(); this.p0=performance.now(); } }
+  pause(){ if(this.pausedAt==null) this.pausedAt=this.now(); }
+  resume(){ if(this.pausedAt!=null){ this.v0=this.pausedAt; this.p0=performance.now(); this.pausedAt=null; } }
   get paused(){ return this.pausedAt!=null; }
   play(script,instant){
-    this.resume(); this.onplay&&this.onplay();
+    this.skipping=false; if(this.act) this.act.clear(); this.resume(); this.onplay&&this.onplay();
     const gen=++this.gen; this.instant=!!instant; this.svg.textContent='';
     this.L={}; for(const k of ['line','arcs','marks','tok','walk','eq']) this.L[k]=el('g',{},this.svg);
     return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
-      .finally(()=>{ if(this.gen===gen&&this.onend) this.onend(); });
+      .finally(()=>{ if(this.gen===gen) this.skipping=false; if(this.gen===gen&&this.onend) this.onend(); });
   }
 }
 
@@ -1085,10 +1098,10 @@ class Ctx{
     const st=this.st, gen=this.gen;
     return new Promise((res,rej)=>{
       if(st.gen!==gen) return rej(CANCEL);
-      if(d<=0){ fn&&fn(1); return res(); }
+      if(d<=0||st.skipping){ fn&&fn(1); return res(); }
       const t0=st.now();
-      const f=()=>{ if(st.gen!==gen) return rej(CANCEL); const t=Math.min(1,(st.now()-t0)/d); fn&&fn(ease(t)); t<1?requestAnimationFrame(f):res(); };
-      requestAnimationFrame(f);
+      const f=()=>{ if(!st.act.has(f)) return; if(st.gen!==gen) return rej(CANCEL); const t=st.skipping?1:Math.min(1,(st.now()-t0)/d); fn&&fn(ease(t)); t<1?requestAnimationFrame(f):(st.act.delete(f),res()); };
+      (st.act||(st.act=new Set())).add(f); requestAnimationFrame(f);
     });
   }
   tw(dur,fn){ return this.run((this.st.instant||RM)?0:dur,fn); }
@@ -1521,10 +1534,10 @@ class NStage extends Stage{
   constructor(svg){ super(svg); this.L={}; for(const k of ['sets','placed','chain','marks','eq','fx']) this.L[k]=el('g',{},svg); }
   clearWork(){ for(const k of ['marks','eq','fx']) this.L[k].textContent=''; }
   play(script){
-    this.resume(); this.onplay&&this.onplay(true);
+    this.skipping=false; if(this.act) this.act.clear(); this.resume(); this.onplay&&this.onplay(true);
     const gen=++this.gen; this.instant=false; this.clearWork();
     return script(new Ctx(this,gen)).catch(e=>{ if(e!==CANCEL) console.error(e); })
-      .finally(()=>{ if(this.gen===gen&&this.onend) this.onend(); });
+      .finally(()=>{ if(this.gen===gen) this.skipping=false; if(this.gen===gen&&this.onend) this.onend(); });
   }
   stop(){ this.resume(); this.gen++; this.clearWork(); }
 }
@@ -2259,4 +2272,35 @@ document.querySelectorAll('.sec[data-sec]').forEach(sec=>{
 })();
 </script>
 
+<script>
+/* speed (0,5x → 1x → 1,5x → 2x → 4x) below pause, skip to end below replay */
+(function(){
+  const SPEEDS=[.5,1,1.5,2,4];
+  const lab=()=>String(SPEED).replace('.',(typeof DM!=='undefined'&&DM==='.')?'.':',')+'x';
+  const showSpeed=()=>document.querySelectorAll('.ctl .spd').forEach(b=>{b.textContent=lab(); b.setAttribute('aria-label','speed '+SPEED);});
+  const ICO='<svg viewBox="0 0 22 16" aria-hidden="true"><path d="M1 1 L9 8 L1 15 Z M9 1 L17 8 L9 15 Z" fill="currentColor"/><rect x="18" y="1" width="3" height="14" rx="1" fill="currentColor"/></svg>';
+  document.querySelectorAll('.bar').forEach(bar=>{
+    const pp=bar.querySelector('.pp'), rep=bar.querySelector('.replay:not(.pp)'); if(!pp||!rep) return;
+    const ctl=document.createElement('div'); ctl.className='ctl'; pp.before(ctl);
+    const sp=document.createElement('button'); sp.type='button'; sp.className='replay spd';
+    const sk=document.createElement('button'); sk.type='button'; sk.className='replay skip'; sk.setAttribute('aria-label','skip to end'); sk.innerHTML=ICO;
+    ctl.append(pp,rep,sp,sk);
+    const sync=()=>{sp.hidden=sk.hidden=pp.hidden;}; sync();
+    new MutationObserver(sync).observe(pp,{attributes:true,attributeFilter:['hidden']});
+    sp.addEventListener('click',()=>{
+      ALLST.forEach(s=>s.rebase());
+      SPEED=SPEEDS[(SPEEDS.indexOf(SPEED)+1)%SPEEDS.length]; try{localStorage.setItem('adh-sp',SPEED);}catch(e){}
+      showSpeed();
+    });
+    // skip: every movement still to come finishes at once, so the end picture is the normal one
+    sk.addEventListener('click',()=>{
+      const card=bar.parentElement, st=ALLST.find(s=>card.contains(s.svg)); if(!st) return;
+      if(st.paused) pp.click();
+      st.skipping=true; if(st.act){ [...st.act].forEach(f=>f()); st.act.clear(); }
+    });
+  });
+  showSpeed();
+  document.addEventListener('click',()=>setTimeout(showSpeed));   // the decimal mark may have changed
+})();
+</script>
 </html>
